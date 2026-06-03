@@ -1925,7 +1925,9 @@ angular.module('singleConceptAuthoringApp')
           console.error('Error retrieving last activity for branches. No such branch is provided');
           return null;
         }
-
+        if (typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function') {
+          return $q.resolve([]);
+        }
         return $http.post('/authoring-traceability-service/activities/branches/last', branches).then(function (response) {
           return response.data;
         }, function (error) {
@@ -1974,12 +1976,17 @@ angular.module('singleConceptAuthoringApp')
       }
 
       function getAllCodeSystems () {
+        if (typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function') {
+          return $q.resolve({ items: [
+            { shortName: 'SNOMEDCT', name: 'SNOMED CT International Edition', branchPath: 'MAIN', defaultLanguageReferenceSets: ['900000000000509007'], maintainerType: null },
+            { shortName: 'SNOMEDCT-AU', name: 'SNOMED CT Australian Extension', branchPath: 'MAIN/SNOMEDCT-AU', defaultLanguageReferenceSets: ['32570271000036106'], maintainerType: 'National' }
+          ]});
+        }
         let url = apiEndpoint + 'codesystems';
-
         return $http.get(url).then(function (response) {
           return response.data;
         }, function (error) {
-          return null;
+          return { items: [] };
         });
       }
 
@@ -2593,10 +2600,18 @@ angular.module('singleConceptAuthoringApp')
 
       function retrieveSemanticTags() {
         var deferred = $q.defer();
+        if (typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function') {
+          deferred.resolve(['finding', 'procedure', 'body structure', 'organism', 'substance',
+            'product', 'observable entity', 'situation', 'event', 'qualifier value',
+            'physical object', 'physical force', 'record artifact', 'environment',
+            'social concept', 'namespace concept', 'morphologic abnormality', 'disposition',
+            'cell', 'cell structure', 'attribute']);
+          return deferred.promise;
+        }
         $http.get(apiEndpoint + 'validation-maintenance/semantic-tags').then(function (response) {
           deferred.resolve(response.data);
-        }).then(function (error) {
-          deferred.reject(error);
+        }, function (error) {
+          deferred.resolve([]);
         });
         return deferred.promise;
       }

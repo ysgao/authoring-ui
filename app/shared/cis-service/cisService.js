@@ -18,6 +18,9 @@ angular.module('singleConceptAuthoringApp')
       }      
 
       function getAllNamespaces() {
+        if (typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function') {
+          return $q.resolve([]);
+        }
         var deferred = $q.defer();
         $http.get(getCisUrl() + '/namespaces').then(function (response) {
           deferred.resolve(response.data);

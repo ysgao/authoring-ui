@@ -511,9 +511,9 @@ angular.module('singleConceptAuthoringApp.home', [
                 }
             });
             accountService.getUserPreferences().then(function (preferences) {
-                $scope.preferences = preferences;
+                $scope.preferences = preferences || {};
 
-                if(preferences.hasOwnProperty("selectedType")) {
+                if($scope.preferences.hasOwnProperty("selectedType")) {
                     $scope.selectedType.type = $scope.preferences.selectedType;
                 }
             });

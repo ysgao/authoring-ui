@@ -5,6 +5,8 @@ angular.module('singleConceptAuthoringApp')
     function ($http, $rootScope, $routeParams, $location, $q, $interval, notificationService, terminologyServerService, $timeout, $window, metadataService) {
 
       var apiEndpoint = null;
+      var _isVsCode = typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function';
+
 
       function setEndpoint(url) {
         apiEndpoint = url;
@@ -590,12 +592,18 @@ angular.module('singleConceptAuthoringApp')
       }
 
       function stompConnect() {
+        var wsUrl = apiEndpoint + 'authoring-services-websocket';
+        var isVsCode = typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function';
+        if (!wsUrl || !/^https?:\/\//.test(wsUrl) || isVsCode) {
+          console.warn('[scaService] Skipping WebSocket (VS Code mode or non-http endpoint):', wsUrl);
+          return;
+        }
         let sockJsProtocols = ["websocket"]
         if (stompClient && stompClient !== null) {
             stompClient.disconnect();
             stompClient = null;
         }
-        var socketProvider =  new SockJS(apiEndpoint + 'authoring-services-websocket', null, {transports: sockJsProtocols});
+        var socketProvider =  new SockJS(wsUrl, null, {transports: sockJsProtocols});
         stompClient = Stomp.over(socketProvider);
         stompClient.connect({}, stompSuccessCallback, stompFailureCallback);
       }
@@ -765,11 +773,6 @@ angular.module('singleConceptAuthoringApp')
           }
           $http.get(apiEndpoint + 'projects/' + projectKey + '/tasks/' + taskKey).then(
             function (response) {
-
-              // temporary check to verify authentication on Edit component
-              // will later be replaced by accountService call in app.js
-//            $rootScope.accountDetails = response.data.assignee;
-
               deferred.resolve(response.data);
             }
           );
@@ -785,6 +788,9 @@ angular.module('singleConceptAuthoringApp')
           if (!panelId) {
             console.error('Must specify panelId to get UI state');
             return null;
+          }
+          if (_isVsCode) {
+            return $q.resolve(null);
           }
           return $http.get(apiEndpoint + 'ui-state/' + panelId).then(
             function (response) {
@@ -842,6 +848,9 @@ angular.module('singleConceptAuthoringApp')
           if (!panelId) {
             console.error('Must specify panelId to get UI state');
             return null;
+          }
+          if (_isVsCode) {
+            return $q.resolve(null);
           }
           return $http.get(apiEndpoint + 'projects/' + projectKey + '/tasks/' + taskKey + '/ui-state/' + panelId).then(
             function (response) {
@@ -1673,6 +1682,9 @@ angular.module('singleConceptAuthoringApp')
 //////////////////////////////////////////
 
         monitorTask: function (projectKey, taskKey) {
+          if (_isVsCode) {
+            return $q.resolve(null);
+          }
           return $http.post(apiEndpoint + 'monitor', {
             'projectId': projectKey,
             'taskId': taskKey
@@ -1686,6 +1698,9 @@ angular.module('singleConceptAuthoringApp')
         },
 
         monitorProject: function (projectKey) {
+          if (_isVsCode) {
+            return $q.resolve(null);
+          }
           return $http.post(apiEndpoint + 'monitor', {'projectId': projectKey}).then(function (response) {
             return response.data;
           }, function (error) {

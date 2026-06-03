@@ -75,6 +75,12 @@ angular
     RVF_ENDPOINT: '/rvf/'
   })
 
+  .config(function ($sceDelegateProvider) {
+    // Allow all resource URLs so AngularJS $sce does not block template loading
+    // under the vscode-resource:// / file+.vscode-resource.vscode-cdn.net origin.
+    $sceDelegateProvider.resourceUrlWhitelist(['**']);
+  })
+
   .config(function ($rootScopeProvider, $provide, $routeProvider, $modalProvider, $httpProvider, localStorageServiceProvider) {
 
     localStorageServiceProvider.setPrefix('singleConceptAuthoringApp')
@@ -93,7 +99,8 @@ angular
     $httpProvider.interceptors.push('httpRequestInterceptor');
 
     // intercept 403 error
-    $httpProvider.interceptors.push(['$q', '$location', 'notificationService', function($q, $location, notificationService) {
+    $httpProvider.interceptors.push(['$q', '$location', 'notificationService', '$window', function($q, $location, notificationService, $window) {
+      var isVsCode = typeof $window.acquireVsCodeApi === 'function';
       return {
           responseError: function(rejection) {
               if(rejection && rejection.status === 403) {
@@ -101,18 +108,16 @@ angular
                   if(rejection.config.method === 'POST' || rejection.config.method === 'PUT' || rejection.config.method === 'DELETE'){
                     notificationService.sendError("Request access denied");
                   } else if(rejection.config.method === 'GET') {
-                    $location.path('/login');
+                    if (!isVsCode) { $location.path('/login'); }
                   }
-                } else {
-                  return $q.reject(rejection);
-                }                
+                }
               } else if (rejection && rejection.status === 401) {
-                $location.path('/login');
-              } else {
-                return $q.reject(rejection);
+                if (!isVsCode) { $location.path('/login'); }
               }
-          } 
-      } 
+              // Always propagate rejection so individual error handlers (e.g. configService fallback) fire.
+              return $q.reject(rejection);
+          }
+      }
   }]);
 
     // modal providers MUST not use animation
@@ -158,7 +163,7 @@ angular
 
   })
 
-  .run(function ($routeProvider, $rootScope, configService, scaService, validationService, terminologyServerService, notificationService, accountService, metadataService, $timeout, $location, $window, $sce, hotkeys, cisService, crsService, templateService, aagService, rnmService, spellcheckService, AppConstants) {
+  .run(function ($routeProvider, $rootScope, configService, scaService, validationService, terminologyServerService, notificationService, accountService, metadataService, $timeout, $location, $window, $sce, hotkeys, cisService, crsService, templateService, aagService, rnmService, spellcheckService, AppConstants, vsCodeService) {
 
     $window.ga('create', 'UA-41892858-21', 'auto');
     // track pageview on state change
@@ -212,7 +217,8 @@ angular
         $rootScope.endpoints = endpoints;
         $rootScope.features = response.features;
 
-        scaService.setEndpoint('..' + AppConstants.AUTHORING_SERVICES_ENDPOINT);
+        var scaEndpoint = endpoints.authoringServicesEndpoint || ('..' + AppConstants.AUTHORING_SERVICES_ENDPOINT);
+        scaService.setEndpoint(scaEndpoint);
         aagService.setEndpoint('..' + AppConstants.AUTHORING_ACCEPTANCE_GATEWAY_ENDPOINT);
         rnmService.setEndpoint('..' + AppConstants.RELEASE_NOTES_ENDPOINT);
         validationService.setRvfEndpoint('..' + AppConstants.RVF_ENDPOINT);
@@ -220,7 +226,7 @@ angular
         terminologyServerService.setEndpoint(endpoints.terminologyServerEndpoint);
         crsService.setCrsEndpoint(endpoints['crsEndpoint']);
         crsService.setUSCrsEndpoint(endpoints['crsEndpoint.US']);
-        var accountUrl = endpoints.imsEndpoint + '/auth';
+        var accountUrl = endpoints.imsEndpoint.replace(/\/$/, '') + '/auth';
         var imsUrl = endpoints.imsEndpoint;
         var imsUrlParams = '?serviceReferer=' + window.location.href;
         $rootScope.collectorUrl = $sce.trustAsResourceUrl(endpoints.collectorEndpoint);
@@ -248,7 +254,7 @@ angular
           function (account) {
 
             if(!(account.roles.includes('ROLE_ihtsdo-sca-author'))) {
-              window.location.href = decodeURIComponent(imsUrl + 'login');
+              vsCodeService.openExternal(decodeURIComponent(imsUrl + 'login'));
             }
 
             if(account.roles.includes('ROLE_ms-users')) {
@@ -315,7 +321,7 @@ angular
                   enabled: true,
                   triggerText: 'Raise an Issue',
                   triggerPosition: 'CUSTOM',
-                  baseUrl: standardBaseUrl || 'https://dev-workflow.ihtsdotools.org'
+                  baseUrl: standardBaseUrl || 'https://dev-snowstorm.ihtsdotools.org'
                 };
               }
 
@@ -376,19 +382,21 @@ angular
             // load semantic tags
             ///////////////////////////////////////////
             terminologyServerService.retrieveSemanticTags().then(function (response) {
-              if(response.length !== 0) {
+              if(response && response.length !== 0) {
                 response.sort(function (a, b) {
                   return a.localeCompare(b);
                 });
               }
-              metadataService.setSemanticTags(response);
+              metadataService.setSemanticTags(response || []);
             });
 
             ///////////////////////////////////////////
             // load code systems
             ///////////////////////////////////////////
             terminologyServerService.getAllCodeSystems().then(function (response) {
-              metadataService.setCodeSystems(response.items);
+              if (response && response.items) {
+                metadataService.setCodeSystems(response.items);
+              }
             });
             
           },
@@ -425,22 +433,26 @@ angular
         $routeProvider
           .when('/login', {
             redirectTo: function () {
-              window.location = decodeURIComponent(imsUrl + 'login' + imsUrlParams);
+              vsCodeService.openExternal(decodeURIComponent(imsUrl + 'login' + imsUrlParams));
+              return '/';
             }
           })
           .when('/logout', {
             redirectTo: function () {
-              window.location = decodeURIComponent(imsUrl + 'logout' + imsUrlParams);
+              vsCodeService.openExternal(decodeURIComponent(imsUrl + 'logout' + imsUrlParams));
+              return '/';
             }
           })
           .when('/settings', {
             redirectTo: function () {
-              window.location = imsUrl + '/settings' + imsUrlParams;
+              vsCodeService.openExternal(imsUrl + '/settings' + imsUrlParams);
+              return '/';
             }
           })
           .when('/register', {
             redirectTo: function () {
-              window.location = decodeURIComponent(imsUrl + 'register' + imsUrlParams);
+              vsCodeService.openExternal(decodeURIComponent(imsUrl + 'register' + imsUrlParams));
+              return '/';
             }
           });
       },

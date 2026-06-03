@@ -10,15 +10,33 @@ angular.module('singleConceptAuthoringApp')
 
     var userPreferences = null;
 
-    function getAccount() {
+    function getAccount(accountUrl) {
 
       var deferred = $q.defer();
 
       if (accountDetails !== null) {
         deferred.resolve(accountDetails);
+        return deferred.promise;
       }
-      else {
-        $http.get('/auth', {withCredentials: true}).
+
+      // In VS Code webview, IMS auth is fetched by the extension host (no CORS)
+      // and injected into window.__ONTOGRAPH_CONFIG__.accountDetails.
+      // If missing, the extension host already opened the system browser for login.
+      if (typeof window.acquireVsCodeApi === 'function') {
+        var vsConfig = (typeof window !== 'undefined' && window.__ONTOGRAPH_CONFIG__) || {};
+        if (vsConfig.accountDetails) {
+          accountDetails = vsConfig.accountDetails;
+          $rootScope.accountDetails = accountDetails;
+          $rootScope.loggedIn = true;
+          deferred.resolve(accountDetails);
+        } else {
+          $rootScope.loggedIn = false;
+          deferred.reject('Not authenticated — log in via browser and reload the panel');
+        }
+        return deferred.promise;
+      }
+
+      $http.get(accountUrl || '/auth', {withCredentials: true}).
           success(function (data, status) {
 
             console.log('Account details retrieved');
@@ -39,13 +57,16 @@ angular.module('singleConceptAuthoringApp')
 
             deferred.reject('Could not retrieve account details');
           });
-      }
 
       return deferred.promise;
     }
 
     function getAppLaunchers() {
       var deferred = $q.defer();
+      if (typeof window.acquireVsCodeApi === 'function') {
+        deferred.resolve([]);
+        return deferred.promise;
+      }
       $http.get('/launcherConfig.json', {withCredentials: true}).
         success(function (data, status) {
           console.log('Launcher config retrieved');
@@ -195,11 +216,15 @@ angular.module('singleConceptAuthoringApp')
 
     // wrapper functions for convenience
     function getUserPreferences() {
+      if (typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function') {
+        return $q.resolve({ appView: 'sca-default', colourScheme: 'sca-colours' });
+      }
       return scaService.getUiStateForUser('user-preferences').then(function(response) {
-        // Always set sca-default view since Application View Setting is no longer used.
-        if(response !== null && response !== undefined){
-            response.appView = "sca-default";
+        if (response === null || response === undefined) {
+          return null;
         }
+        // Always set sca-default view since Application View Setting is no longer used.
+        response.appView = "sca-default";
 
         if (response.branchPath && !isValidBranchPath(response.branchPath)) {
           response.branchPath = null;
