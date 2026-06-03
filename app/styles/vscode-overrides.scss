@@ -1,0 +1,68 @@
+// =============================================================================
+// vscode-overrides.scss
+// VS Code webview layout corrections for authoring-ui-vscode.
+//
+// All rules are scoped to .vscode-webview (injected on <body> by index.html
+// when acquireVsCodeApi is available). Zero impact on standard browser runs.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Phase 2: Foundational — body/container reset
+// Root cause: VS Code webview injects ~8-20px body padding by default.
+// This reduces Bootstrap grid effective width and causes right-edge gaps.
+// -----------------------------------------------------------------------------
+
+.vscode-webview body {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+.vscode-webview *,
+.vscode-webview *::before,
+.vscode-webview *::after {
+  box-sizing: inherit;
+}
+
+.vscode-webview .sca-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// -----------------------------------------------------------------------------
+// US1: button-nav top offset
+// Root cause: editpanel.scss sets top: 64px (browser chrome height).
+// VS Code webview has no browser chrome — panel starts at top: 0.
+// -----------------------------------------------------------------------------
+
+.vscode-webview .button-nav {
+  top: 0px;
+}
+
+// -----------------------------------------------------------------------------
+// US1: edit-no-model view — full-width expansion after diagram hidden
+// Root cause: pull-right float + dynamic col-* width doesn't fill 100% in webview.
+// When thisView='edit-no-model', the edit column should occupy the full panel.
+// -----------------------------------------------------------------------------
+
+.vscode-webview .edit-no-model > div[ng-class],
+.vscode-webview .edit-no-model > .pull-right {
+  float: none !important;
+  width: 100% !important;
+  padding: 0;
+}
+
+// -----------------------------------------------------------------------------
+// US2: edit column right-edge alignment
+// Root cause: modelsConceptsView.html uses pull-right + getLayoutWidths() col-*.
+// In webview, body padding offset means pull-right lands short of true right edge.
+// -----------------------------------------------------------------------------
+
+.vscode-webview .modelScrollBox.pull-right {
+  float: none !important;
+  width: 100% !important;
+}
+
+.vscode-webview .row.no-gutter {
+  width: 100%;
+}

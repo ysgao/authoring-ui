@@ -26,6 +26,7 @@
   <!-- endbuild -->
   <!-- build:css(.tmp) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/vscode-overrides.css">
   <!-- endbuild -->
 
   <style type="text/css">
@@ -44,7 +45,10 @@
     var parcelRequire;
   </script>
   <script src="https://unpkg.com/@statuspage/status-widget/dist/index.js"></script>
-  
+
+  <!-- VS Code webview body-class injection: scopes vscode-overrides.css rules -->
+  <script>if(typeof acquireVsCodeApi!=='undefined'){document.body.classList.add('vscode-webview');}</script>
+
 </head>
 <body ng-app="singleConceptAuthoringApp" scroll-spy id="top"
       class="theme-template-dark theme-blue">
