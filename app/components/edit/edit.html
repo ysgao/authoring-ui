@@ -190,8 +190,16 @@
       <span>Hide all concept models</span></button>
     <!-- Edit View: No model -- Task View Only -->
 
+    <!-- Edit View: Hide diagram, show hierarchy and editing form -->
+    <button ng-if="taskKey" type="button" ng-class="[{'lighten-2' : thisView === 'edit-hide-diagram'}]"
+            class="btn btn-default widget-toolbar blue tooltips-right tooltips-light normal-case white-backgrounnd hide-concept-model-btn"
+            ng-disabled="mode === 'feedback' || mode === 'batch'"
+            ng-click="setView('edit-hide-diagram')">
+      <div class="md md-view-column"></div>
+      <span>Hide diagram, show hierarchy and editing form</span></button>
+
     <!-- Edit View: Enable/Disable Context based editing  -->
-    <button ng-if="taskKey && role === 'AUTHOR' && (thisView === 'edit-default' || thisView === 'edit-no-sidebar' || thisView === 'edit-no-model' || thisView === 'feedback') && isOptionalLanguageRefsetPresent()" type="button"
+    <button ng-if="taskKey && role === 'AUTHOR' && (thisView === 'edit-default' || thisView === 'edit-no-sidebar' || thisView === 'edit-no-model' || thisView === 'edit-hide-diagram' || thisView === 'feedback') && isOptionalLanguageRefsetPresent()" type="button"
             class="btn btn-default widget-toolbar blue tooltips-right tooltips-light normal-case white-backgrounnd hide-concept-model-btn"
             ng-click="toggleContextBasedEditing()">
       <div class="md" ng-class="[{'md-event-available' : enableContextBasedEditing, 'md-event-busy' : !enableContextBasedEditing}]"></div>
@@ -289,6 +297,40 @@
 
     <!-- Edit view with no model -->
     <div ng-if="thisView === 'edit-no-model' && mode === 'edit'" class="edit-no-model">
+
+      <!-- concepts-->
+      <div class="pull-right no-padding hide-scroll" ng-class="getLayoutWidths('modelsAndConcepts')"
+           sca-infinite-scroll="addMoreItems()"
+           sca-infinite-scroll-disabled="conceptsRendering"
+           sca-infinite-scroll-distance="1" sca-infinite-scroll-immediate-check="true">
+
+        <!-- concept data-->
+        <div class="row-fluid no-gutter edit-row"
+             ng-repeat-start="concept in concepts | limitTo: conceptsDisplayed track by concept.conceptId"
+             ng-class="isLast($last)"
+             repeat-complete callback="renderingComplete()">
+
+          <!-- concept -->
+          <div class="no-gutter grey darken-3 panel-height col-md-12">
+            <div concept-edit concept="concepts[$index]" id="concept-edit-{{concept.conceptId}}"
+                 branch="targetBranch" static="branchLocked || !isOwnTask" ui-state-update-fn="updateEditListUiState()"
+                 highlight-changes="true"
+                 enable-context-based-editing="enableContextBasedEditing"
+            >
+            </div>
+          </div>
+
+        </div>
+        <div class="row-fluid no-gutter edit-row" ng-if="$last" ng-repeat-end>
+          <!-- concept -->
+          <div class="no-gutter grey darken-3 col-md-12" fill-height>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit view: hide diagram, show hierarchy and editing form -->
+    <div ng-if="thisView === 'edit-hide-diagram' && mode === 'edit'" class="edit-hide-diagram">
 
       <!-- concepts-->
       <div class="pull-right no-padding hide-scroll" ng-class="getLayoutWidths('modelsAndConcepts')"
