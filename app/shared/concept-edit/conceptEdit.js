@@ -406,7 +406,7 @@ angular.module('singleConceptAuthoringApp')
   }
 ]);
 
-angular.module('singleConceptAuthoringApp').directive('conceptEdit', function ($rootScope, $timeout, $modal, $q, $interval, scaService, terminologyServerService, validationService, inactivationService, componentAuthoringUtil, notificationService, $routeParams, metadataService, crsService, constraintService, templateService, modalService, spellcheckService, ngTableParams, $filter, hotkeys, batchEditingService, $window, accountService, componentHighlightUtil, browserService) {
+angular.module('singleConceptAuthoringApp').directive('conceptEdit', function ($rootScope, $timeout, $modal, $q, $interval, scaService, terminologyServerService, validationService, inactivationService, componentAuthoringUtil, notificationService, $routeParams, metadataService, crsService, constraintService, templateService, modalService, spellcheckService, ngTableParams, $filter, hotkeys, batchEditingService, $window, accountService, componentHighlightUtil, browserService, vsCodeService) {
     return {
       restrict: 'A',
       transclude: false,
@@ -830,6 +830,7 @@ angular.module('singleConceptAuthoringApp').directive('conceptEdit', function ($
               bindShortcutToScope();
               scope.hasFocus = true;
                 $rootScope.$broadcast('conceptFocused', {id : scope.concept.conceptId});
+                vsCodeService.postMessage('CONCEPT_FOCUS', {id: scope.concept.conceptId, label: scope.concept.fsn || ''});
                 if(!external){
                     $timeout(function() {
                       scope.$digest();

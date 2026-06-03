@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('singleConceptAuthoringApp')
-  .factory('vsCodeService', function ($window) {
+  .factory('vsCodeService', function ($window, $rootScope) {
 
     var vscodeApi = null;
 
@@ -16,6 +16,15 @@ angular.module('singleConceptAuthoringApp')
     } else {
       console.warn('[vsCodeService] Running outside VS Code — postMessage and state APIs are no-ops.');
     }
+
+    // Handle incoming messages from the extension host (e.g. GRAPH_NODE_SELECT)
+    $window.addEventListener('message', function (event) {
+      var msg = event.data;
+      if (!msg || !msg.command) { return; }
+      if (msg.command === 'GRAPH_NODE_SELECT' && msg.payload && msg.payload.id) {
+        $rootScope.$broadcast('editConcept', { conceptId: msg.payload.id });
+      }
+    });
 
     return {
       /**
