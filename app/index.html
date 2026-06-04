@@ -46,12 +46,11 @@
   </script>
   <script src="https://unpkg.com/@statuspage/status-widget/dist/index.js"></script>
 
-  <!-- VS Code webview body-class injection: scopes vscode-overrides.css rules -->
-  <script>if(typeof acquireVsCodeApi!=='undefined'){document.body.classList.add('vscode-webview');}</script>
-
 </head>
 <body ng-app="singleConceptAuthoringApp" scroll-spy id="top"
       class="theme-template-dark theme-blue">
+<!-- VS Code webview body-class injection: scopes vscode-overrides.css rules -->
+<script>if(typeof acquireVsCodeApi!=='undefined'){document.body.classList.add('vscode-webview');}</script>
 <!--[if lt IE 7]>
 <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
 <![endif]-->

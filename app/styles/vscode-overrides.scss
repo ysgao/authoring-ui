@@ -12,7 +12,7 @@
 // This reduces Bootstrap grid effective width and causes right-edge gaps.
 // -----------------------------------------------------------------------------
 
-.vscode-webview body {
+body.vscode-webview {
   padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box;
@@ -68,14 +68,31 @@
 }
 
 // -----------------------------------------------------------------------------
-// edit-hide-diagram view — hierarchy sidebar + edit form, no diagram
-// Root cause: same pull-right float issue as edit-no-model.
-// Sidebar stays visible (ng-show not affected by this view).
+// edit-hide-diagram view — hierarchy/sidebar + edit form, no diagram
+// The hierarchy/sidebar is fixed-position, so let the editor consume the
+// remaining row width beside the 3-column sidebar without reserving a diagram
+// column or overflowing the clipped webview container.
 // -----------------------------------------------------------------------------
 
-.vscode-webview .edit-hide-diagram > div[ng-class],
-.vscode-webview .edit-hide-diagram > .pull-right {
+.vscode-webview .edit-hide-diagram .edit-hide-diagram-editor {
+  display: block;
   float: none !important;
-  width: 100% !important;
+  margin-left: 25%;
+  margin-right: 0;
+  width: auto !important;
+  max-width: none;
   padding: 0;
+}
+
+.vscode-webview .edit-hide-diagram .panel-height,
+.vscode-webview .edit-hide-diagram [fill-height] {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 767px) {
+  .vscode-webview .edit-hide-diagram .edit-hide-diagram-editor {
+    margin-left: 0;
+    width: auto !important;
+  }
 }

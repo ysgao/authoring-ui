@@ -127,7 +127,7 @@ angular.module('singleConceptAuthoringApp.edit', [
     .add({
       combo: 'alt+e',
       description: 'Go to Editing',
-      callback: function() {$scope.setView('edit-default');}
+      callback: function() {$scope.setView(getDefaultEditView());}
     })
     .add({
       combo: 'alt+right',
@@ -256,7 +256,7 @@ angular.module('singleConceptAuthoringApp.edit', [
       componentAuthoringUtil.hasUnsavedConcepts($routeParams.projectKey, $routeParams.taskKey).then(function(hasUnsavedConcepts) {
         if (hasUnsavedConcepts) {
           var msg = '';
-          if ($scope.thisView === 'edit-default' || $scope.thisView === 'edit-no-sidebar' || $scope.thisView === 'edit-no-model') {
+          if (isConceptEditingView($scope.thisView)) {
             msg = 'There are some unsaved concepts. Please save them before rebasing.';
           } else {
             msg = 'There are some unsaved concepts. Please go back to task editing and save them before rebasing.';
@@ -289,9 +289,26 @@ angular.module('singleConceptAuthoringApp.edit', [
     /////////////////////////////////
     // View & Layout
     /////////////////////////////////
+    function isVsCodeWebview() {
+      return typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function';
+    }
+
+    function getDefaultEditView() {
+      return isVsCodeWebview() ? 'edit-hide-diagram' : 'edit-default';
+    }
+
+    function isConceptEditingView(viewName) {
+      return viewName === 'edit-default'
+        || viewName === 'edit-no-sidebar'
+        || viewName === 'edit-no-model'
+        || viewName === 'edit-hide-diagram';
+    }
+
     function setDefaultLayout(){
       accountService.getUserPreferences().then(function (preferences) {
-        layoutHandler.setLayout(preferences.layout.editDefault);
+        accountService.applyUserPreferences(preferences).then(function (appliedPreferences) {
+          layoutHandler.setLayout(appliedPreferences.layout.editDefault);
+        });
       });
     }
 
@@ -402,11 +419,11 @@ angular.module('singleConceptAuthoringApp.edit', [
     });
 
     $scope.$on('inactivation.cancelInactivation', function (event, data) {
-      $scope.setView('edit-default');
+      $scope.setView(getDefaultEditView());
     });
 
     $scope.$on('inactivation.inactivationCompleted', function (event, data) {
-      $scope.setView('edit-default');
+      $scope.setView(getDefaultEditView());
     });
 
 
@@ -545,6 +562,7 @@ angular.module('singleConceptAuthoringApp.edit', [
           }
           break;
         case 'edit-no-model':
+        case 'edit-hide-diagram':
           var path = $location.path();
           if (!path.includes('/edit')) {
             $location.url('tasks/task/' + $routeParams.projectKey + '/' + $routeParams.taskKey + '/edit');
@@ -579,7 +597,7 @@ angular.module('singleConceptAuthoringApp.edit', [
           break;
       }
 
-      if ($scope.thisView !== 'edit-default' && $scope.thisView !== 'edit-no-sidebar' && $scope.thisView !== 'edit-no-model') {
+      if (!isConceptEditingView($scope.thisView)) {
         $scope.enableContextBasedEditing = false;
       }
 
@@ -594,7 +612,7 @@ angular.module('singleConceptAuthoringApp.edit', [
     };
 
     $scope.toggleContextBasedEditing = function() {
-      if ($scope.role === 'AUTHOR' && ($scope.thisView === 'edit-default' || $scope.thisView === 'edit-no-sidebar' || $scope.thisView === 'edit-no-model' || $scope.thisView === 'feedback')) {
+      if ($scope.role === 'AUTHOR' && (isConceptEditingView($scope.thisView) || $scope.thisView === 'feedback')) {
         $scope.enableContextBasedEditing = !$scope.enableContextBasedEditing;
       } else {
         $scope.enableContextBasedEditing = false;
@@ -660,7 +678,7 @@ angular.module('singleConceptAuthoringApp.edit', [
       } else if ($routeParams.mode === 'conflicts') {
         $scope.setView('conflicts');
       } else if ($routeParams.mode === 'edit') {
-        $scope.setView('edit-default');
+        $scope.setView(getDefaultEditView());
       } else if ($routeParams.mode === 'batch') {
         $scope.setView('batch');
       }
@@ -725,9 +743,7 @@ angular.module('singleConceptAuthoringApp.edit', [
             if ($scope.concepts.length === $scope.editList.length) {
               if($scope.concepts.length > $scope.conceptsDisplayed
                 && external
-                && ($scope.thisView === 'edit-no-sidebar'
-                || $scope.thisView === 'edit-no-model'
-                || $scope.thisView === 'edit-default')) {
+                && isConceptEditingView($scope.thisView)) {
                 notificationService.sendMessage('The max. number of concepts that can be loaded in the editing panel has been reached', 5000, null);
               } else {
                 notificationService.sendMessage('All concepts loaded', 10000, null);
@@ -799,9 +815,7 @@ angular.module('singleConceptAuthoringApp.edit', [
           $scope.concepts.push(crsConcept.concept);
           if($scope.concepts.length > $scope.conceptsDisplayed
             && external
-            && ($scope.thisView === 'edit-no-sidebar'
-            || $scope.thisView === 'edit-no-model'
-            || $scope.thisView === 'edit-default')) {
+            && isConceptEditingView($scope.thisView)) {
             notificationService.sendMessage('The max. number of concepts that can be loaded in the editing panel has been reached', 5000, null);
           } else {
             notificationService.sendMessage('All concepts loaded', 5000, null);
@@ -826,9 +840,7 @@ angular.module('singleConceptAuthoringApp.edit', [
           $scope.conceptLoading = false;
           if($scope.concepts.length > $scope.conceptsDisplayed
             && external
-            && ($scope.thisView === 'edit-no-sidebar'
-            || $scope.thisView === 'edit-no-model'
-            || $scope.thisView === 'edit-default')) {
+            && isConceptEditingView($scope.thisView)) {
             notificationService.sendMessage('The max. number of concepts that can be loaded in the editing panel has been reached', 5000, null);
           } else {
             notificationService.sendMessage('All concepts loaded', 10000, null);
@@ -995,9 +1007,7 @@ angular.module('singleConceptAuthoringApp.edit', [
       }
 
       if (data.noSwitchView) {
-         if ($scope.thisView === 'edit-default'
-            || $scope.thisView === 'edit-no-sidebar'
-            || $scope.thisView === 'edit-no-model') {
+         if (isConceptEditingView($scope.thisView)) {
             processUiStateUpdate(data.conceptId);
          }
         return;
@@ -1006,7 +1016,7 @@ angular.module('singleConceptAuthoringApp.edit', [
       if(!data.noSwitchView && ($scope.thisView === 'feedback'
         || $scope.thisView === 'batch'
         || $scope.thisView === 'inactivation')) {
-        $scope.setView('edit-default', $scope.role === 'REVIEWER' || $scope.role === 'REVIEWER_ONLY');
+        $scope.setView(getDefaultEditView(), $scope.role === 'REVIEWER' || $scope.role === 'REVIEWER_ONLY');
       }
       processUiStateUpdate(data.conceptId, data.loadFromTermServer);
 
@@ -1062,8 +1072,8 @@ angular.module('singleConceptAuthoringApp.edit', [
             notificationService.sendWarning('A new, unsaved concept exists; please save before cloning', 10000);
             $scope.conceptLoading = false;
 
-            if ($scope.thisView !== 'edit-default') {
-              $scope.setView('edit-default', true);
+            if ($scope.thisView !== getDefaultEditView()) {
+              $scope.setView(getDefaultEditView(), true);
             }
 
             return;
@@ -1223,8 +1233,8 @@ angular.module('singleConceptAuthoringApp.edit', [
         var successMsg = 'Concept ' + response.fsn + ' successfully cloned';
         notificationService.sendMessage(successMsg, 5000);
 
-        if ($scope.thisView !== 'edit-default') {
-          $scope.setView('edit-default',true);
+        if ($scope.thisView !== getDefaultEditView()) {
+          $scope.setView(getDefaultEditView(),true);
         }
 
         $scope.updateEditListUiState();
@@ -1272,7 +1282,7 @@ angular.module('singleConceptAuthoringApp.edit', [
         $scope.concepts.splice(editIndex, 1);
 
         // only update the edit list if actually in an edit view
-        if ($scope.thisView === 'edit-default' || $scope.thisView === 'edit-no-sidebar' || $scope.thisView === 'edit-no-model') {
+        if (isConceptEditingView($scope.thisView)) {
           $scope.updateEditListUiState();
           if(nextConceptIdToBeFocus) {
             $rootScope.$broadcast('conceptFocused', {id: nextConceptIdToBeFocus});
