@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('singleConceptAuthoringApp')
-  .factory('vsCodeService', function ($window, $rootScope) {
+  .factory('vsCodeService', function ($window, $rootScope, $timeout) {
 
     var vscodeApi = null;
 
@@ -22,7 +22,11 @@ angular.module('singleConceptAuthoringApp')
       var msg = event.data;
       if (!msg || !msg.command) { return; }
       if (msg.command === 'GRAPH_NODE_SELECT' && msg.payload && msg.payload.id) {
-        $rootScope.$broadcast('editConcept', { conceptId: msg.payload.id });
+        var conceptId = msg.payload.id;
+        $timeout(function () {
+          $rootScope.$broadcast('treeSelectConcept', { conceptId: conceptId });
+          $rootScope.$broadcast('viewTaxonomy', { concept: { conceptId: conceptId, fsn: '', preferredSynonym: '' } });
+        }, 0);
       }
     });
 

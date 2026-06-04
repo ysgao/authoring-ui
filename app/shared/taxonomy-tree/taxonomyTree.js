@@ -1,7 +1,7 @@
 'use strict';
 angular.module('singleConceptAuthoringApp')
 
-  .directive('taxonomyTree', function ($rootScope, $q, $modal, terminologyServerService, $filter, $timeout, metadataService) {
+  .directive('taxonomyTree', function ($rootScope, $q, $modal, terminologyServerService, $filter, $timeout, metadataService, vsCodeService) {
     return {
       restrict: 'A',
       transclude: false,
@@ -12,11 +12,14 @@ angular.module('singleConceptAuthoringApp')
         limit: '@?',
         view: '=',
         defaultView: '=',
-        defaultLanguage: '=?'
+        defaultLanguage: '=?',
+        selectedNodeId: '=?'
       },
       templateUrl: 'shared/taxonomy-tree/taxonomyTree.html',
 
       link: function (scope) {
+
+        scope.selectedNodeId = null;
 
 
         // set default limit if not specified (unlimited)
@@ -49,7 +52,11 @@ angular.module('singleConceptAuthoringApp')
         // TODO Consider moving this into a directive with passed function
         // Handle single and double click events
 
-        scope.clickNode = function (node) {
+        scope.clickNode = function (node, event) {
+          if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+          }
 
           // set the click count on this node
           node.clickCt = node.clickCt ? node.clickCt + 1 : 1;
@@ -62,20 +69,23 @@ angular.module('singleConceptAuthoringApp')
 
               // execute only if no further clicks detected
               if (node.clickCt === 1) {
-                $rootScope.$broadcast('editConcept', {conceptId: node.conceptId});
-              } else {
+                scope.selectedNodeId = node.conceptId;
+                vsCodeService.postMessage('CONCEPT_FOCUS', { id: node.conceptId, label: node.fsn || '' });
               }
               node.clickCt = 0;
-            }, 500);
+            }, 400);
           }
 
           // double-click functionality
           else {
+            scope.selectedNodeId = node.conceptId;
+            // DIAGNOSTIC: KEEP BROADCAST HERE BUT REMOVE FROM SINGLE CLICK (which was already gone)
+            $rootScope.$broadcast('editConcept', {conceptId: node.conceptId});
             $rootScope.$broadcast('viewTaxonomy', {
               concept: {
                 conceptId: node.conceptId,
                 fsn: node.fsn,
-                preferredSynonym: node.preferredSynonym.term
+                preferredSynonym: node.preferredSynonym ? (typeof node.preferredSynonym === 'object' ? node.preferredSynonym.term : node.preferredSynonym) : ''
               }
             });
             node.clickCt = 0;
@@ -173,7 +183,6 @@ angular.module('singleConceptAuthoringApp')
                 newArray[newArray.length - 1].children.push(node);
                 newArray[newArray.length - 1].collapsed = false;
               }
-              console.log(newArray);
 
               deferred.resolve(newArray);
             },
@@ -475,6 +484,18 @@ angular.module('singleConceptAuthoringApp')
         
         scope.$on('reloadTaxonomy', function (event, data) {
           initialize();
+        });
+
+        scope.$on('editConcept', function (event, data) {
+          if (data && data.conceptId) {
+            scope.selectedNodeId = data.conceptId;
+          }
+        });
+
+        scope.$on('treeSelectConcept', function (event, data) {
+          if (data && data.conceptId) {
+            scope.selectedNodeId = data.conceptId;
+          }
         });
 
         // on extension metadata set, update the search parameters
