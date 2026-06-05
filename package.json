@@ -78,7 +78,8 @@
   },
   "overrides": {
     "angular": "1.4.14",
-    "bootstrap": "3.4.1"
+    "bootstrap": "3.4.1",
+    "graceful-fs": "^4.2.11"
   },
   "repository": {},
   "engines": {
