@@ -17,15 +17,30 @@ angular.module('singleConceptAuthoringApp')
       console.warn('[vsCodeService] Running outside VS Code — postMessage and state APIs are no-ops.');
     }
 
-    // Handle incoming messages from the extension host (e.g. GRAPH_NODE_SELECT)
+    var displayConfigInitCallbacks = [];
+    var storedDisplayConfig = null;
+
+    // Handle incoming messages from the extension host
     $window.addEventListener('message', function (event) {
       var msg = event.data;
       if (!msg || !msg.command) { return; }
+
       if (msg.command === 'GRAPH_NODE_SELECT' && msg.payload && msg.payload.id) {
         var conceptId = msg.payload.id;
         $timeout(function () {
           $rootScope.$broadcast('treeSelectConcept', { conceptId: conceptId });
           $rootScope.$broadcast('viewTaxonomy', { concept: { conceptId: conceptId, fsn: '', preferredSynonym: '' } });
+        }, 0);
+        return;
+      }
+
+      if (msg.command === 'DISPLAY_CONFIG_INIT' && msg.payload) {
+        console.log('[vsCodeService] DISPLAY_CONFIG_INIT received, colourScheme:', msg.payload && msg.payload.userPreferences && msg.payload.userPreferences.colourScheme);
+        storedDisplayConfig = msg.payload;
+        $timeout(function () {
+          for (var i = 0; i < displayConfigInitCallbacks.length; i++) {
+            try { displayConfigInitCallbacks[i](msg.payload); } catch (e) { /* ignore */ }
+          }
         }, 0);
       }
     });
@@ -64,6 +79,35 @@ angular.module('singleConceptAuthoringApp')
        */
       getState: function () {
         return vscodeApi ? vscodeApi.getState() : null;
+      },
+
+      /**
+       * Sends a partial display config update to the extension host for persistence.
+       * No-op when running in standalone browser mode.
+       */
+      sendDisplayConfigChange: function (partial) {
+        if (vscodeApi) {
+          vscodeApi.postMessage({ command: 'DISPLAY_CONFIG_CHANGE', payload: partial });
+        }
+      },
+
+      /**
+       * Registers a callback invoked when the extension host sends DISPLAY_CONFIG_INIT.
+       * If config was already received, callback fires immediately.
+       */
+      onDisplayConfigInit: function (callback) {
+        if (storedDisplayConfig) {
+          $timeout(function () { callback(storedDisplayConfig); }, 0);
+        } else {
+          displayConfigInitCallbacks.push(callback);
+        }
+      },
+
+      /**
+       * Returns the most recently received display config, or null.
+       */
+      getStoredDisplayConfig: function () {
+        return storedDisplayConfig;
       },
 
       /**

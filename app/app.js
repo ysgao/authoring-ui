@@ -165,6 +165,9 @@ angular
 
   .run(function ($routeProvider, $rootScope, configService, scaService, validationService, terminologyServerService, notificationService, accountService, metadataService, $timeout, $location, $window, $sce, hotkeys, cisService, crsService, templateService, aagService, rnmService, spellcheckService, AppConstants, vsCodeService) {
 
+    // Signal extension host that webview is ready so it can send DISPLAY_CONFIG_INIT
+    vsCodeService.postMessage('WEBVIEW_READY', {});
+
     $window.ga('create', 'UA-41892858-21', 'auto');
     // track pageview on state change
     $rootScope.$on('$locationChangeSuccess', function (event) {

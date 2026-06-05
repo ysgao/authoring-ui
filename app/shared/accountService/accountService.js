@@ -4,7 +4,7 @@ angular.module('singleConceptAuthoringApp')
 /**
  * Handles IMS authentication, user roles, and user settings
  */
-  .factory('accountService', function ($http, $rootScope, $q, scaService, metadataService) {
+  .factory('accountService', function ($http, $rootScope, $q, $timeout, scaService, metadataService, vsCodeService) {
 
     var accountDetails = null;
 
@@ -22,7 +22,7 @@ angular.module('singleConceptAuthoringApp')
       // In VS Code webview, IMS auth is fetched by the extension host (no CORS)
       // and injected into window.__ONTOGRAPH_CONFIG__.accountDetails.
       // If missing, the extension host already opened the system browser for login.
-      if (typeof window.acquireVsCodeApi === 'function') {
+      if (vsCodeService.getVsCodeApi() !== null) {
         var vsConfig = (typeof window !== 'undefined' && window.__ONTOGRAPH_CONFIG__) || {};
         if (vsConfig.accountDetails) {
           accountDetails = vsConfig.accountDetails;
@@ -63,7 +63,7 @@ angular.module('singleConceptAuthoringApp')
 
     function getAppLaunchers() {
       var deferred = $q.defer();
-      if (typeof window.acquireVsCodeApi === 'function') {
+      if (vsCodeService.getVsCodeApi() !== null) {
         deferred.resolve([]);
         return deferred.promise;
       }
@@ -216,8 +216,33 @@ angular.module('singleConceptAuthoringApp')
 
     // wrapper functions for convenience
     function getUserPreferences() {
-      if (typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function') {
-        return $q.resolve({ appView: 'sca-default', colourScheme: 'sca-colours' });
+      if (typeof window !== 'undefined' && vsCodeService.getVsCodeApi() !== null) {
+        // Ask extension host for persisted prefs; fall back to defaults if not received within 1 s
+        var deferred = $q.defer();
+        var resolved = false;
+        var defaults = { appView: 'sca-default', colourScheme: 'sca-colours' };
+
+        var stored = vsCodeService.getStoredDisplayConfig();
+        if (stored && stored.userPreferences) {
+          console.log('[accountService] getUserPreferences: using stored config, colourScheme=', stored.userPreferences.colourScheme);
+          return $q.resolve(stored.userPreferences);
+        }
+
+        console.log('[accountService] getUserPreferences: waiting for DISPLAY_CONFIG_INIT');
+        vsCodeService.onDisplayConfigInit(function (config) {
+          if (!resolved) {
+            resolved = true;
+            console.log('[accountService] DISPLAY_CONFIG_INIT arrived, colourScheme=', config && config.userPreferences && config.userPreferences.colourScheme);
+            deferred.resolve(config && config.userPreferences ? config.userPreferences : defaults);
+          }
+        });
+        $timeout(function () {
+          if (!resolved) {
+            console.warn('[accountService] getUserPreferences: DISPLAY_CONFIG_INIT timeout, using defaults');
+            resolved = true; deferred.resolve(defaults);
+          }
+        }, 1000);
+        return deferred.promise;
       }
       return scaService.getUiStateForUser('user-preferences').then(function(response) {
         if (response === null || response === undefined) {
@@ -239,6 +264,11 @@ angular.module('singleConceptAuthoringApp')
       });
     }
     function saveUserPreferences(preferences) {
+      // Persist to extension host globalState when running in VS Code
+      if (typeof window !== 'undefined' && vsCodeService.getVsCodeApi() !== null) {
+        vsCodeService.sendDisplayConfigChange({ userPreferences: preferences });
+        return $q.resolve(preferences);
+      }
       return scaService.saveUiStateForUser('user-preferences', preferences).then(function(response) {
         return response;
       });
