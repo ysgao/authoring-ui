@@ -229,7 +229,11 @@ angular
         terminologyServerService.setEndpoint(endpoints.terminologyServerEndpoint);
         crsService.setCrsEndpoint(endpoints['crsEndpoint']);
         crsService.setUSCrsEndpoint(endpoints['crsEndpoint.US']);
-        var accountUrl = endpoints.imsEndpoint.replace(/\/$/, '') + '/auth';
+        // IMS API is at /api/account; route through the dev proxy via /ims/api/account.
+        // Falls back to a direct URL for production deployments where imsEndpoint is absolute.
+        var accountUrl = (window.location.hostname === 'localhost')
+          ? '/ims/api/account'
+          : endpoints.imsEndpoint.replace(/#.*$/, '').replace(/\/$/, '') + '/api/account';
         var imsUrl = endpoints.imsEndpoint;
         var imsUrlParams = '?serviceReferer=' + window.location.href;
         $rootScope.collectorUrl = $sce.trustAsResourceUrl(endpoints.collectorEndpoint);

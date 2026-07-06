@@ -17,3 +17,4 @@ node/*
 /cypress/screenshots/
 /cypress/downloads/
 /cypress.env.json
+/.dev-ims-account.json
