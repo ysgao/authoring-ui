@@ -78,6 +78,38 @@ module.exports = function (grunt) {
         options: {
           open: true,
           middleware: function (connect) {
+            var https = require('https');
+            var DEV_HOST = 'dev-snowstorm.ihtsdotools.org';
+            var API_PREFIXES = [
+              '/authoring-services/',
+              '/snowstorm/',
+              '/snomed-ct/',
+              '/rvf/',
+              '/release-notes/',
+              '/authoring-acceptance-gateway/',
+              '/ims/'
+            ];
+            function proxyMiddleware(req, res, next) {
+              var url = req.url;
+              var matched = false;
+              for (var i = 0; i < API_PREFIXES.length; i++) {
+                if (url.indexOf(API_PREFIXES[i]) === 0) { matched = true; break; }
+              }
+              if (!matched) { return next(); }
+              var headers = Object.assign({}, req.headers, { host: DEV_HOST });
+              delete headers['accept-encoding']; // avoid compressed responses
+              var options = { hostname: DEV_HOST, port: 443, path: url, method: req.method, headers: headers };
+              var proxyReq = https.request(options, function (proxyRes) {
+                res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                proxyRes.pipe(res, { end: true });
+              });
+              proxyReq.on('error', function (err) {
+                grunt.log.warn('Proxy error for ' + url + ': ' + err.message);
+                res.writeHead(502);
+                res.end('Proxy error: ' + err.message);
+              });
+              req.pipe(proxyReq, { end: true });
+            }
             return [
               connect.static('.tmp'),
               connect().use(
@@ -88,7 +120,8 @@ module.exports = function (grunt) {
                 '/app/styles',
                 connect.static('./app/styles')
               ),
-              connect.static(appConfig.app)
+              connect.static(appConfig.app),
+              proxyMiddleware
             ];
           }
         }
