@@ -78,6 +78,7 @@ module.exports = function (grunt) {
         options: {
           open: true,
           middleware: function (connect) {
+            var serveStatic = require('serve-static');
             var https = require('https');
             var DEV_HOST = 'dev-snowstorm.ihtsdotools.org';
             var IMS_HOST = 'dev-ims.ihtsdotools.org';
@@ -133,16 +134,16 @@ module.exports = function (grunt) {
               req.pipe(proxyReq, { end: true });
             }
             return [
-              connect.static('.tmp'),
+              serveStatic('.tmp'),
               connect().use(
                 '/node_modules',
-                connect.static('./node_modules')
+                serveStatic('./node_modules')
               ),
               connect().use(
                 '/app/styles',
-                connect.static('./app/styles')
+                serveStatic('./app/styles')
               ),
-              connect.static(appConfig.app),
+              serveStatic(appConfig.app),
               proxyMiddleware
             ];
           }

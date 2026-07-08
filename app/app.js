@@ -101,6 +101,24 @@ angular
     // intercept 403 error
     $httpProvider.interceptors.push(['$q', '$location', 'notificationService', '$window', function($q, $location, notificationService, $window) {
       var isVsCode = typeof $window.acquireVsCodeApi === 'function';
+      // On the localhost dev server the IMS session cookie is HttpOnly on
+      // *.ihtsdotools.org and never reaches the proxy, so redirecting to IMS
+      // login just bounces straight back and reloads forever. Stay on the page
+      // and tell the developer to restart grunt serve with IMS_SESSION_COOKIE.
+      var isLocalDev = $window.location.hostname === 'localhost';
+      var authErrorNotified = false;
+      function handleAuthError() {
+        if (isVsCode) { return; }
+        if (isLocalDev) {
+          if (!authErrorNotified) {
+            authErrorNotified = true;
+            notificationService.sendError('Backend rejected the request (not authenticated). ' +
+              'Restart the dev server with IMS_SESSION_COOKIE set — see SETUP.md.');
+          }
+          return;
+        }
+        $location.path('/login');
+      }
       return {
           responseError: function(rejection) {
               if(rejection && rejection.status === 403) {
@@ -108,11 +126,11 @@ angular
                   if(rejection.config.method === 'POST' || rejection.config.method === 'PUT' || rejection.config.method === 'DELETE'){
                     notificationService.sendError("Request access denied");
                   } else if(rejection.config.method === 'GET') {
-                    if (!isVsCode) { $location.path('/login'); }
+                    handleAuthError();
                   }
                 }
               } else if (rejection && rejection.status === 401) {
-                if (!isVsCode) { $location.path('/login'); }
+                handleAuthError();
               }
               // Always propagate rejection so individual error handlers (e.g. configService fallback) fire.
               return $q.reject(rejection);
