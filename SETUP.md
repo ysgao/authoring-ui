@@ -13,10 +13,8 @@ Instructions for running the authoring-ui locally after cloning.
 ## 1. Install dependencies
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 ```
-
-The `--legacy-peer-deps` flag is required due to peer dependency conflicts in older packages.
 
 ## 2. Log in to the dev IMS
 
@@ -75,7 +73,7 @@ The `IMS_SESSION_COOKIE` value is injected as a `Cookie` header on every proxied
 
 ## Cookie expiry
 
-The `dev-ims-ihtsdo` JWT expires after approximately **3 days**. When it expires, API calls will return 403 and the app will redirect to the IMS login page. To refresh:
+The `dev-ims-ihtsdo` JWT expires after approximately **3 days**. When it expires, API calls will return 401/403 and the app shows a "Backend rejected the request (not authenticated)" notification (on localhost it stays on the page instead of redirecting to IMS login, which would loop). To refresh:
 
 1. Log in again at `https://dev-ims.ihtsdotools.org` if needed.
 2. Repeat step 3 above to copy a fresh JWT.
