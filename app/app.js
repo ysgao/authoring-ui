@@ -101,6 +101,24 @@ angular
     // intercept 403 error
     $httpProvider.interceptors.push(['$q', '$location', 'notificationService', '$window', function($q, $location, notificationService, $window) {
       var isVsCode = typeof $window.acquireVsCodeApi === 'function';
+      // On the localhost dev server the IMS session cookie is HttpOnly on
+      // *.ihtsdotools.org and never reaches the proxy, so redirecting to IMS
+      // login just bounces straight back and reloads forever. Stay on the page
+      // and tell the developer to restart grunt serve with IMS_SESSION_COOKIE.
+      var isLocalDev = $window.location.hostname === 'localhost';
+      var authErrorNotified = false;
+      function handleAuthError() {
+        if (isVsCode) { return; }
+        if (isLocalDev) {
+          if (!authErrorNotified) {
+            authErrorNotified = true;
+            notificationService.sendError('Backend rejected the request (not authenticated). ' +
+              'Restart the dev server with IMS_SESSION_COOKIE set — see SETUP.md.');
+          }
+          return;
+        }
+        $location.path('/login');
+      }
       return {
           responseError: function(rejection) {
               if(rejection && rejection.status === 403) {
@@ -108,11 +126,11 @@ angular
                   if(rejection.config.method === 'POST' || rejection.config.method === 'PUT' || rejection.config.method === 'DELETE'){
                     notificationService.sendError("Request access denied");
                   } else if(rejection.config.method === 'GET') {
-                    if (!isVsCode) { $location.path('/login'); }
+                    handleAuthError();
                   }
                 }
               } else if (rejection && rejection.status === 401) {
-                if (!isVsCode) { $location.path('/login'); }
+                handleAuthError();
               }
               // Always propagate rejection so individual error handlers (e.g. configService fallback) fire.
               return $q.reject(rejection);
@@ -229,7 +247,11 @@ angular
         terminologyServerService.setEndpoint(endpoints.terminologyServerEndpoint);
         crsService.setCrsEndpoint(endpoints['crsEndpoint']);
         crsService.setUSCrsEndpoint(endpoints['crsEndpoint.US']);
-        var accountUrl = endpoints.imsEndpoint.replace(/\/$/, '') + '/auth';
+        // IMS API is at /api/account; route through the dev proxy via /ims/api/account.
+        // Falls back to a direct URL for production deployments where imsEndpoint is absolute.
+        var accountUrl = (window.location.hostname === 'localhost')
+          ? '/ims/api/account'
+          : endpoints.imsEndpoint.replace(/#.*$/, '').replace(/\/$/, '') + '/api/account';
         var imsUrl = endpoints.imsEndpoint;
         var imsUrlParams = '?serviceReferer=' + window.location.href;
         $rootScope.collectorUrl = $sce.trustAsResourceUrl(endpoints.collectorEndpoint);

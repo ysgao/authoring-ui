@@ -42,7 +42,7 @@ module.exports = function (grunt) {
       },
       compass: {
         files: ['<%= yeoman.app %>/styles/{,*/}*.{scss,sass}'],
-        tasks: ['compass:server', 'autoprefixer']
+        tasks: ['sass:server', 'autoprefixer']
       },
       gruntfile: {
         files: ['Gruntfile.js']
@@ -78,17 +78,73 @@ module.exports = function (grunt) {
         options: {
           open: true,
           middleware: function (connect) {
+            var serveStatic = require('serve-static');
+            var https = require('https');
+            var DEV_HOST = 'dev-snowstorm.ihtsdotools.org';
+            var IMS_HOST = 'dev-ims.ihtsdotools.org';
+            // IMS_SESSION_COOKIE: set to "dev-ims-ihtsdo=<jwt>" (copy from browser via
+            // DevTools Network → Copy as cURL, extract the dev-ims-ihtsdo cookie value).
+            // The proxy appends it to the Cookie header on all proxied requests.
+            var IMS_SESSION_COOKIE = process.env.IMS_SESSION_COOKIE || '';
+            var API_PREFIXES = [
+              '/authoring-services/',
+              '/snowstorm/',
+              '/snomed-ct/',
+              '/rvf/',
+              '/release-notes/',
+              '/authoring-acceptance-gateway/',
+              '/ims/'
+            ];
+            function proxyMiddleware(req, res, next) {
+              var url = req.url;
+              // Serve mock IMS account locally so the proxy doesn't need the HttpOnly session cookie
+              if (url === '/ims/api/account') {
+                var fs = require('fs');
+                var accountJson = fs.readFileSync('.dev-ims-account.json', 'utf8');
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(accountJson);
+                return;
+              }
+              var matched = false;
+              for (var i = 0; i < API_PREFIXES.length; i++) {
+                if (url.indexOf(API_PREFIXES[i]) === 0) { matched = true; break; }
+              }
+              if (!matched) { return next(); }
+              var isIms = url.indexOf('/ims/') === 0;
+              var targetHost = isIms ? IMS_HOST : DEV_HOST;
+              // /ims/foo → /foo on the IMS host (its API lives at /api/..., not /ims/api/...)
+              var targetPath = isIms ? url.replace(/^\/ims/, '') : url;
+              var headers = Object.assign({}, req.headers, { host: targetHost });
+              delete headers['accept-encoding']; // avoid compressed responses
+              // Inject IMS session cookie (dev-ims-ihtsdo=<jwt>) so the backend can authenticate
+              if (IMS_SESSION_COOKIE) {
+                var existing = headers['cookie'] || '';
+                headers['cookie'] = existing ? existing + '; ' + IMS_SESSION_COOKIE : IMS_SESSION_COOKIE;
+              }
+              var options = { hostname: targetHost, port: 443, path: targetPath, method: req.method, headers: headers };
+              var proxyReq = https.request(options, function (proxyRes) {
+                res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                proxyRes.pipe(res, { end: true });
+              });
+              proxyReq.on('error', function (err) {
+                grunt.log.warn('Proxy error for ' + url + ': ' + err.message);
+                res.writeHead(502);
+                res.end('Proxy error: ' + err.message);
+              });
+              req.pipe(proxyReq, { end: true });
+            }
             return [
-              connect.static('.tmp'),
+              serveStatic('.tmp'),
               connect().use(
                 '/node_modules',
-                connect.static('./node_modules')
+                serveStatic('./node_modules')
               ),
               connect().use(
                 '/app/styles',
-                connect.static('./app/styles')
+                serveStatic('./app/styles')
               ),
-              connect.static(appConfig.app)
+              serveStatic(appConfig.app),
+              proxyMiddleware
             ];
           }
         }
@@ -200,6 +256,15 @@ module.exports = function (grunt) {
       options: {
         implementation: sass,
         sourceMap: true
+      },
+      server: {
+        files: [{
+          expand: true,
+          cwd: 'app/styles',
+          src: ['*.scss'],
+          dest: '.tmp/styles',
+          ext: '.css'
+        }]
       },
       dist: {
         files: [{
@@ -401,6 +466,7 @@ module.exports = function (grunt) {
 
     grunt.task.run([
       'clean:server',
+      'sass:server',
       'autoprefixer:server',
       'connect:livereload',
       'watch'
