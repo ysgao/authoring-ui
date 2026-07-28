@@ -17,3 +17,5 @@ node/*
 /cypress/screenshots/
 /cypress/downloads/
 /cypress.env.json
+
+EndpointsAP.txt
