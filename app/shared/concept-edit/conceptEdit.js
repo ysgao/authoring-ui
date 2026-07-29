@@ -785,12 +785,7 @@ angular.module('singleConceptAuthoringApp').directive('conceptEdit', function ($
             combo: 'alt+m',
             description: 'View Concept in taxonomy',
             callback: function() {
-              $rootScope.$broadcast('viewTaxonomy', {
-                concept: {
-                  conceptId: scope.concept.conceptId,
-                  fsn: scope.concept.fsn
-                }
-              })
+              scope.viewConceptInTaxonomy(scope.concept);
             }
           })
           hotkeys.bindTo(scope)
@@ -1308,6 +1303,16 @@ angular.module('singleConceptAuthoringApp').directive('conceptEdit', function ($
         scope.toggleInferredRelationships = function () {
            scope.showInferredRels = !scope.showInferredRels;
            scope.computeRelationshipGroups();
+        };
+
+        // Same behaviour as drawModelSca.js's button of the same name, above the model diagram panel.
+        scope.viewConceptInTaxonomy = function (concept) {
+          $rootScope.$broadcast('viewTaxonomy', {
+            concept: {
+              conceptId: concept.conceptId,
+              fsn: concept.fsn
+            }
+          });
         };
 
         scope.isProjectTaxonomyVisible = false;

@@ -195,6 +195,11 @@
                   ng-if="!disableRemoveConcept"
                   ng-click="removeConcept(concept)"><span>Remove concept from edit panel</span>
           </button>
+          <button type="button"
+                  class="btn-default editbuttons small-buttons purple darken-1 tooltips-bottom tooltips-light medium-size-tooltip md md-my-library-books"
+                  ng-click="viewConceptInTaxonomy(concept)"
+                  ng-disabled="!concept.active"><span>View in Taxonomy</span>
+          </button>
           <div ng-repeat="field in concept.additionalFields">
                     <textarea class="msd-elastic resizable-text no-border-bottom" ng-model-options="{updateOn: 'blur'}"
                               ng-model="field.value" type="text" placeholder="{{field}}" autofocus>
