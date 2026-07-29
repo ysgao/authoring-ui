@@ -240,11 +240,13 @@ angular
 
         var scaEndpoint = endpoints.authoringServicesEndpoint || ('..' + AppConstants.AUTHORING_SERVICES_ENDPOINT);
         scaService.setEndpoint(scaEndpoint);
-        aagService.setEndpoint('..' + AppConstants.AUTHORING_ACCEPTANCE_GATEWAY_ENDPOINT);
-        rnmService.setEndpoint('..' + AppConstants.RELEASE_NOTES_ENDPOINT);
-        validationService.setRvfEndpoint('..' + AppConstants.RVF_ENDPOINT);
+        aagService.setEndpoint(endpoints.aagEndpoint || ('..' + AppConstants.AUTHORING_ACCEPTANCE_GATEWAY_ENDPOINT));
+        rnmService.setEndpoint(endpoints.releaseNotesEndpoint || ('..' + AppConstants.RELEASE_NOTES_ENDPOINT));
+        validationService.setRvfEndpoint(endpoints.rvfEndpoint || ('..' + AppConstants.RVF_ENDPOINT));
         spellcheckService.setEndpoint(AppConstants.AUTHORING_SERVICES_ENDPOINT + 'spelling/check');
+        templateService.setEndpoint(endpoints.templateServiceEndpoint || '../template-service/');
         terminologyServerService.setEndpoint(endpoints.terminologyServerEndpoint);
+        terminologyServerService.setTraceabilityEndpoint(endpoints.traceabilityEndpoint || '/authoring-traceability-service/');
         crsService.setCrsEndpoint(endpoints['crsEndpoint']);
         crsService.setUSCrsEndpoint(endpoints['crsEndpoint.US']);
         // IMS API is at /api/account; route through the dev proxy via /ims/api/account.

@@ -13,7 +13,7 @@
       <li>
         <ul class="dashboard-link-list">
           <li>
-            <a ng-href="#/">
+            <a ng-href="#/" ng-click="gotoDashboard($event)">
               <div class="home-link pointerbtn-link withoutripple" data-cy="dashboard-menu">
                 <span class="btn btn-round-sm hamberger"><i class="md md-menu f20"></i></span>
                 <span>Dashboard</span>
@@ -21,15 +21,15 @@
               </a>
 
             <ul>
-              <li class="no-padding"><a ng-href="#/" data-cy="nav-my-tasks"><div>My Tasks</div></a>
+              <li class="no-padding"><a ng-href="#/" ng-click="gotoMyTasks($event)" data-cy="nav-my-tasks"><div>My Tasks</div></a>
               </li>
-              <li class="no-padding"><a ng-href="#/review-tasks" data-cy="nav-review-tasks"><div>Review Tasks</div></a>
+              <li class="no-padding"><a ng-href="#/review-tasks" ng-click="gotoReviewTasks($event)" data-cy="nav-review-tasks"><div>Review Tasks</div></a>
               </li>
-              <li class="no-padding"><a ng-href="#/my-projects" data-cy="nav-my-projects"><div>My Projects</div></a>
+              <li class="no-padding"><a ng-href="#/my-projects" ng-click="gotoMyProjects($event)" data-cy="nav-my-projects"><div>My Projects</div></a>
               </li>
-              <li class="no-padding"><a ng-href="#/projects" data-cy="nav-all-projects"><div>All Projects</div></a>
+              <li class="no-padding"><a ng-href="#/projects" ng-click="gotoAllProjects($event)" data-cy="nav-all-projects"><div>All Projects</div></a>
               </li>
-              <li class="no-padding"><a ng-href="#/codesystems" data-cy="nav-code-systems"><div>Code Systems</div></a>
+              <li class="no-padding"><a ng-href="#/codesystems" ng-click="gotoCodeSystems($event)" data-cy="nav-code-systems"><div>Code Systems</div></a>
               </li>
               <li ng-click="openBrowser()" data-cy="nav-ts-browser">TS Browser
               </li>
@@ -125,7 +125,7 @@
 
     <ul class="nav navbar-nav navbar-right navbar-right-no-collapse identity-services col-md-2" ng-if="!loggedIn">
       <li class="pull-right">
-        <a ng-href="#/login">Login</a>
+        <a ng-href="#/login" ng-click="gotoLogin($event)">Login</a>
       </li>
     </ul>
     <ul class="nav navbar-nav navbar-right no-padding navbar-right-no-collapse  identity-services col-md-3 pull-right"
@@ -153,7 +153,7 @@
         </a>
       </li>
       <li class="pull-right">
-        <a ng-href="#/logout" data-cy="logout-button">Logout</a>
+        <a ng-href="#/logout" ng-click="gotoLogout($event)" data-cy="logout-button">Logout</a>
       </li>
     </ul>
   </div>

@@ -1,27 +1,49 @@
 'use strict';
 angular.module('singleConceptAuthoringApp.sidebar', [])
 
-  .controller('sidebarCtrl', ['$scope', '$rootScope', '$location', '$modal', '$q', '$timeout','metadataService','templateService', 'notificationService','accountService',
-    function sidebarCtrl($scope, $rootScope, $location, $modal, $q, $timeout, metadataService, templateService, notificationService, accountService) {
+  .controller('sidebarCtrl', ['$scope', '$rootScope', '$location', '$modal', '$q', '$timeout','metadataService','templateService', 'notificationService','accountService','vsCodeService',
+    function sidebarCtrl($scope, $rootScope, $location, $modal, $q, $timeout, metadataService, templateService, notificationService, accountService, vsCodeService) {
       $scope.allowTaskCreation = false;
 
+      // TS Browser is a sibling app on the same upstream host as authoring-services. In VS
+      // Code, window.open(path) resolves against the webview's own sandboxed origin (not the
+      // real host) and webviews block window.open outright, so route through the extension
+      // host's openExternal instead.
       $scope.gotoBrowser = function() {
-        window.open('/browser', '_blank');
+        if (vsCodeService.getVsCodeApi()) {
+          var origin = ($rootScope.endpoints && $rootScope.endpoints.externalAppsOrigin) || '';
+          vsCodeService.openExternal(origin ? origin.replace(/\/$/, '') + '/browser' : '/browser');
+        } else {
+          window.open('/browser', '_blank');
+        }
       };
 
-      $scope.gotoMyProjects = function() {
+      // These nav items are plain ng-href="#/..." anchors with no ng-click, relying on the
+      // browser's native same-document hash navigation, which breaks in the VS Code webview
+      // (see header.js for the full explanation). Driving the route through $location.url()
+      // directly sidesteps that mismatch entirely, in both environments.
+      $scope.gotoMyProjects = function($event) {
+        if ($event) { $event.preventDefault(); }
         $location.url('my-projects');
       };
 
-      $scope.gotoAllProjects = function() {
+      $scope.gotoAllProjects = function($event) {
+        if ($event) { $event.preventDefault(); }
         $location.url('projects');
       };
 
-      $scope.gotoHome = function() {
+      $scope.gotoHome = function($event) {
+        if ($event) { $event.preventDefault(); }
         $location.url('home');
       };
-      $scope.gotoReviews = function() {
+      $scope.gotoReviews = function($event) {
+        if ($event) { $event.preventDefault(); }
         $location.url('review-tasks');
+      };
+
+      $scope.gotoCodeSystems = function($event) {
+        if ($event) { $event.preventDefault(); }
+        $location.url('codesystems');
       };
 
       $scope.isProjectsLoaded = function() {

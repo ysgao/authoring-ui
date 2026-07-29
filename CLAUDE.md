@@ -36,6 +36,16 @@ The app detects `window.acquireVsCodeApi()` at runtime. In VS Code mode:
 - The extension host can pre-supply `window.__ONTOGRAPH_CONFIG__` (including a full `uiConfiguration` object) to bypass the network config fetch entirely.
 - Auth redirects and 401/403 handling are suppressed (`isVsCode` guards in the HTTP interceptor).
 
+#### Endpoint proxying (`endpoints.*`)
+
+`extension/src/authoring/authoringPanel.ts` injects `endpoints.*` into `window.__ONTOGRAPH_CONFIG__.uiConfiguration`. Only keys the Angular app calls via `$http` XHR are rewritten to the local CORS/auth proxy (`PROXIED_ENDPOINT_KEYS` in `authoringPanel.ts`: `authoringServicesEndpoint`, `terminologyServerEndpoint`, `aagEndpoint`, `releaseNotesEndpoint`, `rvfEndpoint`, `templateServiceEndpoint`, `traceabilityEndpoint`, `crsEndpoint`/`crsEndpoint.US`). Everything else the real backend returns (`scaUserGuideEndpoint`, `contactUsEndpoint`, `dailyBuildEndpoint`, `imsEndpoint`, ...) is passed through with its real, unproxied value — these are used to build links opened in the user's system browser (footer links, `openExternal` calls), and the proxy only knows how to forward to the authoring-services host. **When adding a new backend-called service, add its endpoint key to `PROXIED_ENDPOINT_KEYS`; when adding a new externally-opened link, do not.**
+
+`endpoints.externalAppsOrigin` is a non-proxied convenience value (the real authoring-services origin) for building links to sibling companion apps (`/browser/`, `/mrcm/`, `/reporting/`, `/release-notes-management/`, `/validation-browser/`, `/template-management/`, `/simplex/...`) — see `header.js`'s `openExternalApp()` helper and `sidebar.js`'s `gotoBrowser()`. In VS Code, `window.open(path)` is blocked by the webview sandbox and a bare root-relative path resolves against the wrong origin anyway, so these helpers route through `vsCodeService.openExternal()` instead; in browser mode they fall back to plain `window.open(path)` unchanged.
+
+#### Hash-link navigation in the webview
+
+`<base href>` is pointed at the extension's local `vscode-resource` asset root (needed so relative script/css/image paths resolve), which diverges from the webview's real document address. That makes the browser treat a plain `<a href="#/...">` click as a cross-document navigation to a nonexistent resource instead of same-page hash navigation — it silently no-ops with no console error. This affects every `#/...` link app-wide (34+ occurrences: nav dropdown, sidebar, project/task/codesystem list rows, ...). `vsCodeService.js` installs a document-level capture-phase `click` listener (VS Code mode only) that intercepts any click bubbling through an `<a href="#/...">`, prevents the default navigation, and drives the route via `$location.url()` instead — this covers the pattern app-wide without needing per-template fixes. A few components (`header.js`, `sidebar.js`) also wire explicit `ng-click` handlers for the same links as a belt-and-suspenders fix predating the global interceptor; harmless redundancy, not required for new links.
+
 ### Startup flow
 
 1. `app.js` posts `WEBVIEW_READY` to VS Code host.

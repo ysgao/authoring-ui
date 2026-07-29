@@ -2,7 +2,7 @@
 
 angular.module('singleConceptAuthoringApp')
 
-  .directive('scaHeader', ['$rootScope', '$timeout', '$modal', '$location', '$route', 'metadataService', 'templateService', '$routeParams', 'accountService', 'permissionService', function ($rootScope, $timeout, $modal, $location, $route, metadataService, templateService, $routeParams, accountService, permissionService) {
+  .directive('scaHeader', ['$rootScope', '$timeout', '$modal', '$location', '$route', 'metadataService', 'templateService', '$routeParams', 'accountService', 'permissionService', 'vsCodeService', function ($rootScope, $timeout, $modal, $location, $route, metadataService, templateService, $routeParams, accountService, permissionService, vsCodeService) {
     return {
       restrict: '',
       transclude: false,
@@ -222,23 +222,73 @@ angular.module('singleConceptAuthoringApp')
           });
         };
 
-        scope.gotoMyTasks = function() {
+        // These nav items are plain ng-href="#/..." anchors with no ng-click, relying on
+        // the browser's native same-document hash navigation. That only works when the
+        // resolved href's non-fragment part matches the current document address — true in
+        // a normal browser, but NOT in the VS Code webview, where <base href> points at the
+        // extension's local asset root while the real document address is VS Code's own
+        // webview host URL. There the browser treats the click as a cross-document
+        // navigation to a nonexistent resource and silently does nothing. Driving the route
+        // change through $location.url() directly (and preventing the native navigation)
+        // sidesteps that mismatch entirely, in both environments.
+        scope.gotoDashboard = function($event) {
+          if ($event) { $event.preventDefault(); }
           $location.url('home');
         };
 
-        scope.gotoReviewTasks = function() {
+        scope.gotoMyTasks = function($event) {
+          if ($event) { $event.preventDefault(); }
+          $location.url('home');
+        };
+
+        scope.gotoReviewTasks = function($event) {
+          if ($event) { $event.preventDefault(); }
           $location.url('review-tasks');
         };
 
-        scope.gotoMyProjects = function() {
+        scope.gotoMyProjects = function($event) {
+          if ($event) { $event.preventDefault(); }
           $location.url('my-projects');
         };
 
-        scope.gotoTemplates = function() {
-          window.open('/template-management/', '_blank');
+        scope.gotoCodeSystems = function($event) {
+          if ($event) { $event.preventDefault(); }
+          $location.url('codesystems');
         };
 
-        scope.gotoAllProjects = function() {
+        scope.gotoLogin = function($event) {
+          if ($event) { $event.preventDefault(); }
+          $location.url('login');
+        };
+
+        scope.gotoLogout = function($event) {
+          if ($event) { $event.preventDefault(); }
+          $location.url('logout');
+        };
+
+        // These companion apps (browser, mrcm, reporting, release-notes-management,
+        // validation-browser, template-management, simplex) are siblings of authoring-services
+        // on the same upstream host. In VS Code, plain window.open(path) resolves against the
+        // webview's own sandboxed origin (not the real host) and webviews block window.open
+        // outright, so route through the extension host's openExternal instead. Absolute URLs
+        // (e.g. dailyBuildEndpoint from ui-configuration) are passed through unchanged.
+        function openExternalApp(pathOrUrl) {
+          if (vsCodeService.getVsCodeApi()) {
+            var isAbsolute = /^https?:\/\//i.test(pathOrUrl);
+            var origin = ($rootScope.endpoints && $rootScope.endpoints.externalAppsOrigin) || '';
+            var url = isAbsolute ? pathOrUrl : (origin ? origin.replace(/\/$/, '') + pathOrUrl : pathOrUrl);
+            vsCodeService.openExternal(url);
+          } else {
+            window.open(pathOrUrl, '_blank');
+          }
+        }
+
+        scope.gotoTemplates = function() {
+          openExternalApp('/template-management/');
+        };
+
+        scope.gotoAllProjects = function($event) {
+          if ($event) { $event.preventDefault(); }
           $location.url('projects');
         };
 
@@ -246,16 +296,16 @@ angular.module('singleConceptAuthoringApp')
           accountService.getUserPreferences().then(function (response) {
               scope.userPreferences = response;
               if(window.location.href.indexOf("task/") > -1) {
-                  window.open('/browser/?perspective=full&conceptId1=138875005&edition=' + $rootScope.currentTask.branchPath.substring(0, $rootScope.currentTask.branchPath.lastIndexOf('/')) + '&release=' + $rootScope.currentTask.key, '_blank');
+                  openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + $rootScope.currentTask.branchPath.substring(0, $rootScope.currentTask.branchPath.lastIndexOf('/')) + '&release=' + $rootScope.currentTask.key);
                 }
               else if(window.location.href.indexOf("project/") > -1) {
-                  window.open('/browser/?perspective=full&conceptId1=138875005&edition=' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey, '_blank');
+                  openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey);
                 }
               else if(scope.userPreferences && scope.userPreferences.branchPath){
-                  window.open('/browser/?perspective=full&conceptId1=138875005&edition=' + scope.userPreferences.branchPath, '_blank');
+                  openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + scope.userPreferences.branchPath);
                 }
               else{
-                  window.open('/browser/?perspective=full&conceptId1=138875005', '_blank');
+                  openExternalApp('/browser/?perspective=full&conceptId1=138875005');
               }
           });
         };
@@ -263,31 +313,31 @@ angular.module('singleConceptAuthoringApp')
         scope.openDailyBuild = function() {
           if(window.location.href.indexOf("codesystem/") > -1) {
             var codeSystem = metadataService.getCodeSystenForGivenShortname($routeParams.codeSystem);
-            window.open($rootScope.endpoints.dailyBuildEndpoint + '?perspective=full&conceptId1=138875005&edition=' + codeSystem.branchPath, '_blank');
+            openExternalApp($rootScope.endpoints.dailyBuildEndpoint + '?perspective=full&conceptId1=138875005&edition=' + codeSystem.branchPath);
           } else {
-            window.open($rootScope.endpoints.dailyBuildEndpoint, '_blank');
+            openExternalApp($rootScope.endpoints.dailyBuildEndpoint);
           }
         };
 
         scope.openReporting = function() {
           if(window.location.href.indexOf("task/") > -1) {
-            window.open('/reporting/' + $rootScope.currentTask.branchPath);
+            openExternalApp('/reporting/' + $rootScope.currentTask.branchPath);
           } else if(window.location.href.indexOf("project/") > -1) {
-            window.open('/reporting/' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey);
+            openExternalApp('/reporting/' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey);
           } else if(window.location.href.indexOf("codesystem/") > -1) {
             var codeSystem = metadataService.getCodeSystenForGivenShortname($routeParams.codeSystem);
-            window.open('/reporting/' + codeSystem.branchPath);
+            openExternalApp('/reporting/' + codeSystem.branchPath);
           } else {
-            window.open('/reporting/');
+            openExternalApp('/reporting/');
           }
         };
 
         scope.openReleaseNotes = function() {
-          window.open('/release-notes-management/');
+          openExternalApp('/release-notes-management/');
         };
 
         scope.openValidationBrowser = function() {
-          window.open('/validation-browser/');
+          openExternalApp('/validation-browser/');
         };
 
         scope.openMRCM = function() {
@@ -295,10 +345,10 @@ angular.module('singleConceptAuthoringApp')
             let date = metadataService.getPreviousRelease();
             let path = 'MAIN/' + date.slice(0,4) + '-' + date.slice(4,6) + '-' + date.slice(6,8);
 
-            window.open('/mrcm/?branch=' + path);
+            openExternalApp('/mrcm/?branch=' + path);
           }
           else{
-              window.open('/mrcm/');
+              openExternalApp('/mrcm/');
           }
         };
 
@@ -317,7 +367,7 @@ angular.module('singleConceptAuthoringApp')
           } else {
             shortName = null;
           }
-          window.open('/simplex/translation-dashboard' + (shortName && shortName.includes('-') ? ('/' + shortName) : ''));
+          openExternalApp('/simplex/translation-dashboard' + (shortName && shortName.includes('-') ? ('/' + shortName) : ''));
         };
 
         scope.$watch('accountDetails', function () {

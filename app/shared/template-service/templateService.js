@@ -8,6 +8,10 @@ angular.module('singleConceptAuthoringApp')
 
     var apiEndpoint = '../template-service/';
 
+    function setEndpoint(url) {
+      apiEndpoint = url;
+    }
+
     var exclusionList = [];
 
     //
@@ -1501,6 +1505,7 @@ angular.module('singleConceptAuthoringApp')
 
       // task initialization
       setTask: setTask,
+      setEndpoint: setEndpoint,
 
       // Template exclusion list
       setExclusionList: setExclusionList,

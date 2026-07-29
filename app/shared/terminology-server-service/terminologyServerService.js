@@ -7,6 +7,14 @@ angular.module('singleConceptAuthoringApp')
   .service('terminologyServerService', ['$http', '$q', '$timeout', '$interval', 'notificationService', 'metadataService', '$rootScope',
     function ($http, $q, $timeout, $interval, notificationService, metadataService, $rootScope) {
       let apiEndpoint = null;
+      // Sibling microservice, not nested under apiEndpoint — defaults to same-origin
+      // relative path (works when authoring-ui and traceability share a host, e.g. in
+      // browser/production mode); the VS Code host overrides this to its proxy URL.
+      let traceabilityEndpoint = '/authoring-traceability-service/';
+
+      function setTraceabilityEndpoint(url) {
+        traceabilityEndpoint = url;
+      }
 
       /////////////////////////////////////
       // Methods to normalise the Snowstorm response formats
@@ -1861,7 +1869,7 @@ angular.module('singleConceptAuthoringApp')
           params += '&brief=true'
         }
 
-        $http.get('/authoring-traceability-service/activities?' + params).then(function (response) {
+        $http.get(traceabilityEndpoint + 'activities?' + params).then(function (response) {
           deferred.resolve(response.data);
         }, function (error) {
           if (error.status === 404) {
@@ -1882,7 +1890,7 @@ angular.module('singleConceptAuthoringApp')
           return null;
         }
         var params = 'page=0&size=1&sort=commitDate%2Cdesc&sourceBranch=' + encodeURIComponent(branchRoot);
-        return $http.get('/authoring-traceability-service/activities/promotions?' + params).then(function (response) {
+        return $http.get(traceabilityEndpoint + 'activities/promotions?' + params).then(function (response) {
           return response.data && response.data.content && response.data.content[0] ? response.data.content[0].commitDate : null;
         }, function (error) {
           return null;
@@ -1897,7 +1905,7 @@ angular.module('singleConceptAuthoringApp')
           return null;
         }
         var params = 'onBranch=' + encodeURIComponent(branchRoot) +'&includeHigherPromotions=false&activityType=REBASE&intOnly=false&brief=true&summaryOnly=true&page=0&size=20&sort=commitDate%2Cdesc';
-        return $http.get('/authoring-traceability-service/activities?' + params).then(function (response) {
+        return $http.get(traceabilityEndpoint + 'activities?' + params).then(function (response) {
           return response.data && response.data.content && response.data.content[0] ? response.data.content[0].commitDate : null;
         }, function (error) {
           return null;
@@ -1912,7 +1920,7 @@ angular.module('singleConceptAuthoringApp')
           return null;
         }
         var params = 'page=0&size=1&sort=commitDate%2Cdesc&onBranch=' + encodeURIComponent(branchRoot);
-        return $http.get('/authoring-traceability-service/activities?' + params).then(function (response) {
+        return $http.get(traceabilityEndpoint + 'activities?' + params).then(function (response) {
           return response.data && response.data.content && response.data.content[0] ? response.data.content[0].commitDate : null;
         }, function (error) {
           return null;
@@ -1928,7 +1936,7 @@ angular.module('singleConceptAuthoringApp')
         if (typeof window !== 'undefined' && typeof window.acquireVsCodeApi === 'function') {
           return $q.resolve([]);
         }
-        return $http.post('/authoring-traceability-service/activities/branches/last', branches).then(function (response) {
+        return $http.post(traceabilityEndpoint + 'activities/branches/last', branches).then(function (response) {
           return response.data;
         }, function (error) {
           return null;
@@ -2768,6 +2776,7 @@ angular.module('singleConceptAuthoringApp')
         cleanDescription: cleanDescription,
         cleanRelationship: cleanRelationship,
         setEndpoint: setEndpoint,
+        setTraceabilityEndpoint: setTraceabilityEndpoint,
         getEndpoint: getEndpoint,
         retrieveSemanticTags: retrieveSemanticTags,
         copyConcept: copyConcept,

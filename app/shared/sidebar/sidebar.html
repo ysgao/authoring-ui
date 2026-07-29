@@ -5,35 +5,35 @@
       </button>
     </li>
     <li>
-        <a ng-href="#/">
+        <a ng-href="#/" ng-click="gotoHome($event)">
             <button type="button" class="btn grey darken-3 dashboard-links" data-cy="sidebar-my-tasks">
                 My Tasks
             </button>
         </a>
     </li>
     <li>
-        <a ng-href="#/review-tasks">
+        <a ng-href="#/review-tasks" ng-click="gotoReviews($event)">
             <button type="button" class="btn grey darken-3 dashboard-links" data-cy="sidebar-review-tasks">
                 Review Tasks
             </button>
         </a>
     </li>
     <li>
-        <a ng-href="#/my-projects">
+        <a ng-href="#/my-projects" ng-click="gotoMyProjects($event)">
             <button type="button" class="btn grey darken-3 dashboard-links" data-cy="sidebar-my-projects">
                 My Projects
             </button>
         </a>
     </li>
     <li>
-        <a ng-href="#/projects">
+        <a ng-href="#/projects" ng-click="gotoAllProjects($event)">
             <button type="button" class="btn grey darken-3 dashboard-links" data-cy="sidebar-all-projects">
                 All Projects
             </button>
         </a>
     </li>
     <li>
-        <a ng-href="#/codesystems">
+        <a ng-href="#/codesystems" ng-click="gotoCodeSystems($event)">
             <button type="button" class="btn grey darken-3 dashboard-links" data-cy="sidebar-code-systems">
                 Code Systems
             </button>

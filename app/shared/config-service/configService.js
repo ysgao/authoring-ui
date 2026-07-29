@@ -15,6 +15,12 @@ angular.module('singleConceptAuthoringApp')
         terminologyServerEndpoint: _vsConfig.terminologyServerEndpoint || 'https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/',
         imsEndpoint: _vsConfig.imsEndpoint || 'https://dev-snowstorm.ihtsdotools.org/',
         authoringServicesEndpoint: _vsConfig.authoringServicesEndpoint || 'https://dev-snowstorm.ihtsdotools.org/authoring-services/',
+        aagEndpoint: _vsConfig.aagEndpoint || '',
+        releaseNotesEndpoint: _vsConfig.releaseNotesEndpoint || '',
+        rvfEndpoint: _vsConfig.rvfEndpoint || '',
+        templateServiceEndpoint: _vsConfig.templateServiceEndpoint || '',
+        traceabilityEndpoint: _vsConfig.traceabilityEndpoint || '',
+        externalAppsOrigin: _vsConfig.externalAppsOrigin || '',
         crsEndpoint: '',
         collectorEndpoint: '',
         msCollectorEndpoint: ''

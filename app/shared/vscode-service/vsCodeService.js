@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('singleConceptAuthoringApp')
-  .factory('vsCodeService', function ($window, $rootScope, $timeout) {
+  .factory('vsCodeService', function ($window, $rootScope, $timeout, $location) {
 
     var vscodeApi = null;
 
@@ -15,6 +15,29 @@ angular.module('singleConceptAuthoringApp')
       }
     } else {
       console.warn('[vsCodeService] Running outside VS Code — postMessage and state APIs are no-ops.');
+    }
+
+    // <base href> is pointed at the extension's local vscode-resource asset root (needed to
+    // resolve relative script/css/image paths), which diverges from the webview's real
+    // document address. That makes the browser treat a plain <a href="#/..."> click as
+    // cross-document navigation to a nonexistent resource instead of same-page hash
+    // navigation, so it silently no-ops with no console error. This affects every such link
+    // app-wide (nav dropdown, sidebar, project/task/codesystem list rows, ...), so intercept
+    // clicks globally here rather than patching each template's ng-href with an ng-click.
+    if (vscodeApi) {
+      document.addEventListener('click', function (event) {
+        var el = event.target;
+        while (el && el.tagName !== 'A') {
+          el = el.parentElement;
+        }
+        if (!el) { return; }
+        var href = el.getAttribute('href');
+        if (!href || href.indexOf('#/') !== 0) { return; }
+        event.preventDefault();
+        $timeout(function () {
+          $location.url(href.substring(1));
+        });
+      }, true);
     }
 
     var displayConfigInitCallbacks = [];
