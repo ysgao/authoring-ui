@@ -5060,9 +5060,11 @@ angular.module('singleConceptAuthoringApp').directive('conceptEdit', function ($
         };
 
         scope.viewConceptJson = function() {
-          terminologyServerService.getEndpoint().then(function(endpoint) {
-            window.open(endpoint +'browser/' + scope.branch + '/concepts/' + scope.concept.conceptId, '_blank');
-          });
+          // terminologyServerService.getEndpoint() is proxied to a local URL in VS Code mode
+          // (needed for XHR calls) — use the real, unproxied endpoint for this externally-opened
+          // link instead, same reasoning as vsCodeService.openExternalApp/externalAppsOrigin.
+          var endpoint = ($rootScope.endpoints && $rootScope.endpoints.terminologyServerExternalEndpoint) || '';
+          vsCodeService.openExternalApp(endpoint + 'browser/' + scope.branch + '/concepts/' + scope.concept.conceptId);
         };
 
         scope.requestPromotion = function() {

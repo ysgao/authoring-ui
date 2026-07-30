@@ -442,7 +442,7 @@ angular
           .add({
             combo: 'alt+b',
             description: 'Open TS Browser',
-            callback: function() {window.open('/browser', '_blank');}
+            callback: function() { vsCodeService.openExternalApp('/browser'); }
           })
           .add({
             combo: 'alt+p',

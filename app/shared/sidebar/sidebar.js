@@ -5,17 +5,8 @@ angular.module('singleConceptAuthoringApp.sidebar', [])
     function sidebarCtrl($scope, $rootScope, $location, $modal, $q, $timeout, metadataService, templateService, notificationService, accountService, vsCodeService) {
       $scope.allowTaskCreation = false;
 
-      // TS Browser is a sibling app on the same upstream host as authoring-services. In VS
-      // Code, window.open(path) resolves against the webview's own sandboxed origin (not the
-      // real host) and webviews block window.open outright, so route through the extension
-      // host's openExternal instead.
       $scope.gotoBrowser = function() {
-        if (vsCodeService.getVsCodeApi()) {
-          var origin = ($rootScope.endpoints && $rootScope.endpoints.externalAppsOrigin) || '';
-          vsCodeService.openExternal(origin ? origin.replace(/\/$/, '') + '/browser' : '/browser');
-        } else {
-          window.open('/browser', '_blank');
-        }
+        vsCodeService.openExternalApp('/browser');
       };
 
       // These nav items are plain ng-href="#/..." anchors with no ng-click, relying on the

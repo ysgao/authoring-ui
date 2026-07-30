@@ -35,8 +35,8 @@ angular.module('singleConceptAuthoringApp.codesystem', [
       });
   })
 
-  .controller('CodesystemCtrl', ['$scope', '$rootScope', '$routeParams', '$modal', '$filter', 'metadataService', 'scaService', 'terminologyServerService', 'aagService', 'rnmService', 'notificationService', '$location', 'ngTableParams', 'accountService', 'promotionService', 'templateService', '$q', '$timeout','hotkeys','$interval', 'permissionService','modalService',
-    function ProjectCtrl($scope, $rootScope, $routeParams, $modal, $filter, metadataService, scaService, terminologyServerService, aagService, rnmService, notificationService, $location, ngTableParams, accountService, promotionService, templateService, $q, $timeout,hotkeys,$interval, permissionService, modalService) {
+  .controller('CodesystemCtrl', ['$scope', '$rootScope', '$routeParams', '$modal', '$filter', 'metadataService', 'scaService', 'terminologyServerService', 'aagService', 'rnmService', 'notificationService', '$location', 'ngTableParams', 'accountService', 'promotionService', 'templateService', '$q', '$timeout','hotkeys','$interval', 'permissionService','modalService', 'vsCodeService',
+    function ProjectCtrl($scope, $rootScope, $routeParams, $modal, $filter, metadataService, scaService, terminologyServerService, aagService, rnmService, notificationService, $location, ngTableParams, accountService, promotionService, templateService, $q, $timeout,hotkeys,$interval, permissionService, modalService, vsCodeService) {
 
       $rootScope.pageTitle = 'Code System/' + $routeParams.codeSystem;
 
@@ -380,9 +380,10 @@ angular.module('singleConceptAuthoringApp.codesystem', [
           notificationService.sendMessage('Starting new Authoring cycle...');
           terminologyServerService.startNewAuthoringCycle($scope.codeSystem.shortName, response && response.newEffectiveTime ? response.newEffectiveTime : null).then(function() {
             notificationService.clear();
-            terminologyServerService.getEndpoint().then(function(endpoint) {
-              modalService.message('Success', 'Metadata for this codesystem have been updated. Click <a href="' + endpoint + 'branches/' + $scope.codeSystem.branchPath + '/metadata?includeInheritedMetadata=true" target="_blank">here</a> to review.');
-            });
+            // Real, unproxied endpoint — this link is opened in the user's system browser via
+            // target="_blank", not fetched via XHR, so it must not point at the local proxy.
+            var endpoint = ($rootScope.endpoints && $rootScope.endpoints.terminologyServerExternalEndpoint) || '';
+            modalService.message('Success', 'Metadata for this codesystem have been updated. Click <a href="' + endpoint + 'branches/' + $scope.codeSystem.branchPath + '/metadata?includeInheritedMetadata=true" target="_blank">here</a> to review.');
           }, function(error) {
             notificationService.sendError('Error starting new Authoring cycle: ' + error);
           });
@@ -523,9 +524,10 @@ angular.module('singleConceptAuthoringApp.codesystem', [
       };
 
       $scope.viewCodeSystemMetadata = function () {
-        return terminologyServerService.getEndpoint().then(function(endpoint) {
-          window.open(endpoint + 'branches/' + $scope.codeSystem.branchPath + '/metadata?includeInheritedMetadata=true', '_blank');
-        });
+        // Use the real, unproxied terminology-server endpoint for this externally-opened link —
+        // terminologyServerService.getEndpoint() is proxied to a local URL in VS Code mode.
+        var endpoint = ($rootScope.endpoints && $rootScope.endpoints.terminologyServerExternalEndpoint) || '';
+        vsCodeService.openExternalApp(endpoint + 'branches/' + $scope.codeSystem.branchPath + '/metadata?includeInheritedMetadata=true');
       };
 
       function waitForCodeSystemUpgradeToComplete(jobId) {

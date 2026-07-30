@@ -24,6 +24,9 @@ angular.module('singleConceptAuthoringApp')
     // navigation, so it silently no-ops with no console error. This affects every such link
     // app-wide (nav dropdown, sidebar, project/task/codesystem list rows, ...), so intercept
     // clicks globally here rather than patching each template's ng-href with an ng-click.
+    // stopPropagation is required, not just cosmetic: this listener runs in the capture phase,
+    // before any per-link ng-click handler (header.js/sidebar.js add a few as a belt-and-
+    // suspenders fix predating this interceptor). Without it, both fire for the same click.
     if (vscodeApi) {
       document.addEventListener('click', function (event) {
         var el = event.target;
@@ -34,6 +37,7 @@ angular.module('singleConceptAuthoringApp')
         var href = el.getAttribute('href');
         if (!href || href.indexOf('#/') !== 0) { return; }
         event.preventDefault();
+        event.stopPropagation();
         $timeout(function () {
           $location.url(href.substring(1));
         });
@@ -143,6 +147,25 @@ angular.module('singleConceptAuthoringApp')
           vscodeApi.postMessage({ command: 'openExternal', payload: { url: url } });
         } else {
           $window.location.href = url;
+        }
+      },
+
+      /**
+       * Opens a companion-app link (TS Browser, MRCM, Reporting, ...) or an already-absolute
+       * URL in the user's system browser. Sibling companion apps are root-relative paths
+       * (e.g. '/browser') resolved against endpoints.externalAppsOrigin, the real (unproxied)
+       * authoring-services origin — in VS Code, a bare window.open(path) resolves against the
+       * webview's own sandboxed origin and webviews block window.open outright, so this routes
+       * through openExternal instead. In browser mode it falls back to plain window.open.
+       */
+      openExternalApp: function (pathOrUrl) {
+        var isAbsolute = /^https?:\/\//i.test(pathOrUrl);
+        if (vscodeApi) {
+          var origin = ($rootScope.endpoints && $rootScope.endpoints.externalAppsOrigin) || '';
+          var url = isAbsolute ? pathOrUrl : (origin ? origin.replace(/\/$/, '') + pathOrUrl : pathOrUrl);
+          this.openExternal(url);
+        } else {
+          $window.open(pathOrUrl, '_blank');
         }
       }
     };

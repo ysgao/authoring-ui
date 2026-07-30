@@ -13,6 +13,7 @@ angular.module('singleConceptAuthoringApp')
     var VSCODE_FALLBACK_CONFIG = {
       endpoints: {
         terminologyServerEndpoint: _vsConfig.terminologyServerEndpoint || 'https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/',
+        terminologyServerExternalEndpoint: _vsConfig.terminologyServerExternalEndpoint || _vsConfig.terminologyServerEndpoint || 'https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/',
         imsEndpoint: _vsConfig.imsEndpoint || 'https://dev-snowstorm.ihtsdotools.org/',
         authoringServicesEndpoint: _vsConfig.authoringServicesEndpoint || 'https://dev-snowstorm.ihtsdotools.org/authoring-services/',
         aagEndpoint: _vsConfig.aagEndpoint || '',
@@ -21,6 +22,7 @@ angular.module('singleConceptAuthoringApp')
         templateServiceEndpoint: _vsConfig.templateServiceEndpoint || '',
         traceabilityEndpoint: _vsConfig.traceabilityEndpoint || '',
         externalAppsOrigin: _vsConfig.externalAppsOrigin || '',
+        dailyBuildEndpoint: _vsConfig.dailyBuildEndpoint || '',
         crsEndpoint: '',
         collectorEndpoint: '',
         msCollectorEndpoint: ''

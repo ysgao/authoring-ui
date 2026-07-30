@@ -266,25 +266,8 @@ angular.module('singleConceptAuthoringApp')
           $location.url('logout');
         };
 
-        // These companion apps (browser, mrcm, reporting, release-notes-management,
-        // validation-browser, template-management, simplex) are siblings of authoring-services
-        // on the same upstream host. In VS Code, plain window.open(path) resolves against the
-        // webview's own sandboxed origin (not the real host) and webviews block window.open
-        // outright, so route through the extension host's openExternal instead. Absolute URLs
-        // (e.g. dailyBuildEndpoint from ui-configuration) are passed through unchanged.
-        function openExternalApp(pathOrUrl) {
-          if (vsCodeService.getVsCodeApi()) {
-            var isAbsolute = /^https?:\/\//i.test(pathOrUrl);
-            var origin = ($rootScope.endpoints && $rootScope.endpoints.externalAppsOrigin) || '';
-            var url = isAbsolute ? pathOrUrl : (origin ? origin.replace(/\/$/, '') + pathOrUrl : pathOrUrl);
-            vsCodeService.openExternal(url);
-          } else {
-            window.open(pathOrUrl, '_blank');
-          }
-        }
-
         scope.gotoTemplates = function() {
-          openExternalApp('/template-management/');
+          vsCodeService.openExternalApp('/template-management/');
         };
 
         scope.gotoAllProjects = function($event) {
@@ -296,48 +279,49 @@ angular.module('singleConceptAuthoringApp')
           accountService.getUserPreferences().then(function (response) {
               scope.userPreferences = response;
               if(window.location.href.indexOf("task/") > -1) {
-                  openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + $rootScope.currentTask.branchPath.substring(0, $rootScope.currentTask.branchPath.lastIndexOf('/')) + '&release=' + $rootScope.currentTask.key);
+                  vsCodeService.openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + $rootScope.currentTask.branchPath.substring(0, $rootScope.currentTask.branchPath.lastIndexOf('/')) + '&release=' + $rootScope.currentTask.key);
                 }
               else if(window.location.href.indexOf("project/") > -1) {
-                  openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey);
+                  vsCodeService.openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey);
                 }
               else if(scope.userPreferences && scope.userPreferences.branchPath){
-                  openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + scope.userPreferences.branchPath);
+                  vsCodeService.openExternalApp('/browser/?perspective=full&conceptId1=138875005&edition=' + scope.userPreferences.branchPath);
                 }
               else{
-                  openExternalApp('/browser/?perspective=full&conceptId1=138875005');
+                  vsCodeService.openExternalApp('/browser/?perspective=full&conceptId1=138875005');
               }
           });
         };
 
         scope.openDailyBuild = function() {
+          if (!$rootScope.endpoints || !$rootScope.endpoints.dailyBuildEndpoint) { return; }
           if(window.location.href.indexOf("codesystem/") > -1) {
             var codeSystem = metadataService.getCodeSystenForGivenShortname($routeParams.codeSystem);
-            openExternalApp($rootScope.endpoints.dailyBuildEndpoint + '?perspective=full&conceptId1=138875005&edition=' + codeSystem.branchPath);
+            vsCodeService.openExternalApp($rootScope.endpoints.dailyBuildEndpoint + '?perspective=full&conceptId1=138875005&edition=' + codeSystem.branchPath);
           } else {
-            openExternalApp($rootScope.endpoints.dailyBuildEndpoint);
+            vsCodeService.openExternalApp($rootScope.endpoints.dailyBuildEndpoint);
           }
         };
 
         scope.openReporting = function() {
           if(window.location.href.indexOf("task/") > -1) {
-            openExternalApp('/reporting/' + $rootScope.currentTask.branchPath);
+            vsCodeService.openExternalApp('/reporting/' + $rootScope.currentTask.branchPath);
           } else if(window.location.href.indexOf("project/") > -1) {
-            openExternalApp('/reporting/' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey);
+            vsCodeService.openExternalApp('/reporting/' + metadataService.getBranchRoot() + '/' + $routeParams.projectKey);
           } else if(window.location.href.indexOf("codesystem/") > -1) {
             var codeSystem = metadataService.getCodeSystenForGivenShortname($routeParams.codeSystem);
-            openExternalApp('/reporting/' + codeSystem.branchPath);
+            vsCodeService.openExternalApp('/reporting/' + codeSystem.branchPath);
           } else {
-            openExternalApp('/reporting/');
+            vsCodeService.openExternalApp('/reporting/');
           }
         };
 
         scope.openReleaseNotes = function() {
-          openExternalApp('/release-notes-management/');
+          vsCodeService.openExternalApp('/release-notes-management/');
         };
 
         scope.openValidationBrowser = function() {
-          openExternalApp('/validation-browser/');
+          vsCodeService.openExternalApp('/validation-browser/');
         };
 
         scope.openMRCM = function() {
@@ -345,10 +329,10 @@ angular.module('singleConceptAuthoringApp')
             let date = metadataService.getPreviousRelease();
             let path = 'MAIN/' + date.slice(0,4) + '-' + date.slice(4,6) + '-' + date.slice(6,8);
 
-            openExternalApp('/mrcm/?branch=' + path);
+            vsCodeService.openExternalApp('/mrcm/?branch=' + path);
           }
           else{
-              openExternalApp('/mrcm/');
+              vsCodeService.openExternalApp('/mrcm/');
           }
         };
 
@@ -367,7 +351,7 @@ angular.module('singleConceptAuthoringApp')
           } else {
             shortName = null;
           }
-          openExternalApp('/simplex/translation-dashboard' + (shortName && shortName.includes('-') ? ('/' + shortName) : ''));
+          vsCodeService.openExternalApp('/simplex/translation-dashboard' + (shortName && shortName.includes('-') ? ('/' + shortName) : ''));
         };
 
         scope.$watch('accountDetails', function () {

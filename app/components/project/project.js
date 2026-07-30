@@ -22,8 +22,8 @@ angular.module('singleConceptAuthoringApp.project', [
       });
   })
 
-  .controller('ProjectCtrl', ['$scope', '$rootScope', '$routeParams', '$modal', '$filter', 'metadataService', 'scaService', 'terminologyServerService', 'aagService', 'rnmService', 'notificationService', '$location', 'ngTableParams', 'accountService', 'promotionService', 'templateService', '$q', '$timeout','hotkeys','$interval', 'permissionService','modalService',
-    function ProjectCtrl($scope, $rootScope, $routeParams, $modal, $filter, metadataService, scaService, terminologyServerService, aagService, rnmService, notificationService, $location, ngTableParams, accountService, promotionService, templateService, $q, $timeout,hotkeys,$interval, permissionService, modalService) {
+  .controller('ProjectCtrl', ['$scope', '$rootScope', '$routeParams', '$modal', '$filter', 'metadataService', 'scaService', 'terminologyServerService', 'aagService', 'rnmService', 'notificationService', '$location', 'ngTableParams', 'accountService', 'promotionService', 'templateService', '$q', '$timeout','hotkeys','$interval', 'permissionService','modalService', 'vsCodeService',
+    function ProjectCtrl($scope, $rootScope, $routeParams, $modal, $filter, metadataService, scaService, terminologyServerService, aagService, rnmService, notificationService, $location, ngTableParams, accountService, promotionService, templateService, $q, $timeout,hotkeys,$interval, permissionService, modalService, vsCodeService) {
 
       // project and project branch
       $scope.projectBranch = null;
@@ -271,9 +271,10 @@ angular.module('singleConceptAuthoringApp.project', [
       }
 
       $scope.viewProjectMetadata = function () {
-        return terminologyServerService.getEndpoint().then(function(endpoint) {
-          window.open(endpoint + 'branches/' + $scope.branch + '/metadata?includeInheritedMetadata=true', '_blank');
-        });
+        // Use the real, unproxied terminology-server endpoint for this externally-opened link —
+        // terminologyServerService.getEndpoint() is proxied to a local URL in VS Code mode.
+        var endpoint = ($rootScope.endpoints && $rootScope.endpoints.terminologyServerExternalEndpoint) || '';
+        vsCodeService.openExternalApp(endpoint + 'branches/' + $scope.branch + '/metadata?includeInheritedMetadata=true');
       };
 
       $scope.$on('reloadProject', function (event, data) {
