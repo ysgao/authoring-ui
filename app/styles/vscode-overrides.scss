@@ -30,16 +30,6 @@ body.vscode-webview {
 }
 
 // -----------------------------------------------------------------------------
-// US1: button-nav top offset
-// Root cause: editpanel.scss sets top: 64px (browser chrome height).
-// VS Code webview has no browser chrome — panel starts at top: 0.
-// -----------------------------------------------------------------------------
-
-.vscode-webview .button-nav {
-  top: 0px;
-}
-
-// -----------------------------------------------------------------------------
 // US1: edit-no-model view — full-width expansion after diagram hidden
 // Root cause: pull-right float + dynamic col-* width doesn't fill 100% in webview.
 // When thisView='edit-no-model', the edit column should occupy the full panel.
