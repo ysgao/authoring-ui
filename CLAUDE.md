@@ -12,7 +12,7 @@ npm test             # unit tests (Karma/Jasmine)
 npx cypress open     # E2E tests
 ```
 
-The dev server proxies API paths (`/authoring-services/`, `/snowstorm/`, `/snomed-ct/`, `/rvf/`, `/release-notes/`, `/authoring-acceptance-gateway/`, `/ims/`) to `https://dev-snowstorm.ihtsdotools.org`. To target a different backend, change `DEV_HOST` in `Gruntfile.js` `connect.livereload.options.middleware`.
+The dev server proxies API paths (`/authoring-services/`, `/snowstorm/`, `/snomed-ct/`, `/rvf/`, `/release-notes/`, `/authoring-acceptance-gateway/`, `/ims/`) to `https://uat-snowstorm.ihtsdotools.org`. To target a different backend, change `DEV_HOST` in `Gruntfile.js` `connect.livereload.options.middleware`.
 
 ## Architecture
 
@@ -32,9 +32,20 @@ The dev server proxies API paths (`/authoring-services/`, `/snowstorm/`, `/snome
 ### Dual-mode: browser vs VS Code
 
 The app detects `window.acquireVsCodeApi()` at runtime. In VS Code mode:
-- `vsCodeService` wraps the webview API for bi-directional messaging (`WEBVIEW_READY`, `DISPLAY_CONFIG_INIT`, `GRAPH_NODE_SELECT`, `DISPLAY_CONFIG_CHANGE`).
+- `vsCodeService` wraps the webview API for bi-directional messaging (`WEBVIEW_READY`, `DISPLAY_CONFIG_INIT`, `GRAPH_NODE_SELECT`, `DISPLAY_CONFIG_CHANGE`, `TASK_CONTEXT_CHANGED`).
 - The extension host can pre-supply `window.__ONTOGRAPH_CONFIG__` (including a full `uiConfiguration` object) to bypass the network config fetch entirely.
 - Auth redirects and 401/403 handling are suppressed (`isVsCode` guards in the HTTP interceptor).
+- `scaService.js`'s `stompConnect()` skips the authoring-services WebSocket/STOMP connection entirely in VS Code mode — see "Classification/validation status polling" below for the consequence and workaround.
+
+#### `TASK_CONTEXT_CHANGED` (task open/close reporting)
+
+`edit.js`'s `EditCtrl` calls `vsCodeService.sendTaskContext({projectKey, taskKey, branchPath})` whenever a task finishes loading, and `vsCodeService.sendTaskContext(null)` on `$scope.$on('$destroy', ...)` when the user navigates away. The extension host stores this (`extension/src/shared/sessionState.ts`) and writes it to `~/.ontograph/session.json` (`sessionFile.ts`) — this is how the headless `authoring-cli` (`cli/` at the repo root) learns which task is currently open without being told explicitly. See the root `CLAUDE.md`'s "Headless CLI" section for the full picture.
+
+#### Classification/validation status polling in VS Code mode
+
+Real-time classification/validation completion normally arrives over the STOMP/WebSocket subscription set up in `scaService.js`'s `subscriptionHandler` (broadcasts `reloadTaskClassification`/`reloadTask`/`reloadTaskValidationStatus`). Since that connection is skipped entirely in VS Code mode, a classification job can finish server-side while `$rootScope.classificationRunning` never clears — the spinner looks permanently hung even though nothing is actually wrong.
+
+`edit.js`'s `pollClassificationStatusInVsCode()` works around this, gated behind `vsCodeService.getVsCodeApi()` (a no-op outside VS Code, where STOMP already works). It polls every 5s (capped ~20 minutes), and — critically — calls `scaService.clearClassificationStatusCacheForTask()` before each `getTaskForProject()` check: `authoring-services` caches `latestClassificationJson`, and the normal STOMP flow always evicts that cache before re-fetching (see `classification.js`'s `clearClassificationStatusCache()`); skipping the evict call means the poll reads back a stale "RUNNING" status forever, even after the job completes. Triggered both right after starting classification (`doClassify()`) and on task load if classification is already mid-flight (`loadTask()`), so reopening a task recovers automatically too.
 
 #### Endpoint proxying (`endpoints.*`)
 

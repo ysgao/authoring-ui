@@ -70,11 +70,17 @@ angular.module('singleConceptAuthoringApp.edit', [
     };
   })
 
-  .controller('EditCtrl', function EditCtrl($scope, $rootScope, $location, $modal, layoutHandler, metadataService, accountService, scaService, inactivationService, terminologyServerService, componentAuthoringUtil, notificationService, $routeParams, $timeout, $q, crsService, reviewService, ngTableParams, templateService, $filter, hotkeys, modalService, permissionService) {
+  .controller('EditCtrl', function EditCtrl($scope, $rootScope, $location, $modal, layoutHandler, metadataService, accountService, scaService, inactivationService, terminologyServerService, componentAuthoringUtil, notificationService, $routeParams, $timeout, $q, crsService, reviewService, ngTableParams, templateService, $filter, hotkeys, modalService, permissionService, vsCodeService) {
 
     // Close all concepts listener
     $scope.$on('closeAllOpenningConcepts', function (event, data) {
       $scope.closeAllConcepts();
+    });
+
+    // Tell the extension host (and, via its session file, the headless cli/) that this
+    // task is no longer open once the user navigates away from this route.
+    $scope.$on('$destroy', function () {
+      vsCodeService.sendTaskContext(null);
     });
 
     //Keyboard Shortcuts
@@ -1692,12 +1698,20 @@ angular.module('singleConceptAuthoringApp.edit', [
           markTaskInProgressIfTraceabilityFound(response).then(function(task) {
             $scope.task = task;
             $rootScope.currentTask = task;
+            vsCodeService.sendTaskContext({
+              projectKey: $routeParams.projectKey,
+              taskKey: $routeParams.taskKey,
+              branchPath: task.branchPath
+            });
 
             // set the classification and validation flags
             $rootScope.classificationRunning = $scope.task.latestClassificationJson && ($scope.task.latestClassificationJson.status === 'RUNNING' || $scope.task.latestClassificationJson.status === 'BUILDING' || $scope.task.latestClassificationJson.status === 'SCHEDULED');
             $rootScope.validationRunning = $scope.task.latestValidationStatus && ($scope.task.latestValidationStatus === 'QUEUED' || $scope.task.latestValidationStatus === 'SCHEDULED' || $scope.task.latestValidationStatus === 'RUNNING');
             if ($rootScope.validationRunning) {
               refreshValidationIndicator($scope.task.latestValidationStatus);
+            }
+            if ($rootScope.classificationRunning) {
+              pollClassificationStatusInVsCode($routeParams.projectKey, $routeParams.taskKey);
             }
             deferred.resolve(task);
           });
@@ -2000,6 +2014,46 @@ angular.module('singleConceptAuthoringApp.edit', [
       });
     };
 
+    // The VS Code webview never connects to the authoring-services STOMP/WebSocket channel
+    // (scaService.js's stompConnect() deliberately skips it there), so classification/validation
+    // completion notifications that normally arrive over that channel never reach this webview —
+    // the job finishes server-side but $rootScope.classificationRunning never clears, and the
+    // spinner looks permanently hung. Poll the task's status directly instead, only in VS Code
+    // mode (outside it, STOMP already handles this in real time).
+    var CLASSIFICATION_POLL_INTERVAL_MS = 5000;
+    var CLASSIFICATION_POLL_MAX_ATTEMPTS = 240; // ~20 minutes
+
+    function pollClassificationStatusInVsCode(projectKey, taskKey, attemptsRemaining) {
+      if (!vsCodeService.getVsCodeApi()) {
+        return;
+      }
+      if (typeof attemptsRemaining === 'undefined') {
+        attemptsRemaining = CLASSIFICATION_POLL_MAX_ATTEMPTS;
+      }
+      if (attemptsRemaining <= 0) {
+        return;
+      }
+      $timeout(function () {
+        // authoring-services caches latestClassificationJson; the normal STOMP-driven flow
+        // (classification.js's clearClassificationStatusCache()) always evicts it before
+        // re-fetching the task, or a completed job keeps reading back as stale "RUNNING"
+        // indefinitely. Do the same here before checking status.
+        scaService.clearClassificationStatusCacheForTask(projectKey, taskKey).then(
+          function () { return scaService.getTaskForProject(projectKey, taskKey); },
+          function () { return scaService.getTaskForProject(projectKey, taskKey); }
+        ).then(function (task) {
+          var status = task && task.latestClassificationJson && task.latestClassificationJson.status;
+          var stillRunning = status === 'RUNNING' || status === 'SCHEDULED' || status === 'BUILDING' || status === 'QUEUED';
+          if (stillRunning) {
+            pollClassificationStatusInVsCode(projectKey, taskKey, attemptsRemaining - 1);
+          } else {
+            notificationService.sendMessage('Classification ' + (status ? status.toLowerCase() : 'completed') + ' for task ' + taskKey, 10000);
+            $rootScope.$broadcast('reloadTask', {project: projectKey, task: taskKey});
+          }
+        });
+      }, CLASSIFICATION_POLL_INTERVAL_MS);
+    }
+
     function doClassify() {
        // start the classification
       scaService.startClassificationForTask($routeParams.projectKey, $routeParams.taskKey).then(function (response) {
@@ -2016,6 +2070,7 @@ angular.module('singleConceptAuthoringApp.edit', [
         }
 
         $rootScope.$broadcast('reloadTask');
+        pollClassificationStatusInVsCode($routeParams.projectKey, $routeParams.taskKey);
       }, function () {
         // do nothing on error
       });

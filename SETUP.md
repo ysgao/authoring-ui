@@ -28,11 +28,11 @@ This establishes the session that all dev backend services authenticate against.
 
 ## 3. Get your session cookie
 
-The dev backend (`dev-snowstorm.ihtsdotools.org`) authenticates via a cookie named `dev-ims-ihtsdo`. To obtain its value:
+The dev backend (`uat-snowstorm.ihtsdotools.org`) authenticates via a cookie named `dev-ims-ihtsdo`. To obtain its value:
 
 1. In Chrome, navigate to:
    ```
-   https://dev-snowstorm.ihtsdotools.org/authoring-services/projects?lightweight=true
+   https://uat-snowstorm.ihtsdotools.org/authoring-services/projects?lightweight=true
    ```
    It should return a JSON list of projects (confirms you are authenticated).
 
@@ -62,10 +62,10 @@ The server starts at **http://localhost:9000** with LiveReload.
 
 | Local path | Proxied to |
 |---|---|
-| `/authoring-services/` | `https://dev-snowstorm.ihtsdotools.org/authoring-services/` |
-| `/snowstorm/` | `https://dev-snowstorm.ihtsdotools.org/snowstorm/` |
+| `/authoring-services/` | `https://uat-snowstorm.ihtsdotools.org/authoring-services/` |
+| `/snowstorm/` | `https://uat-snowstorm.ihtsdotools.org/snowstorm/` |
 | `/ims/` | `https://dev-ims.ihtsdotools.org/` |
-| `/rvf/`, `/release-notes/`, etc. | `https://dev-snowstorm.ihtsdotools.org/…` |
+| `/rvf/`, `/release-notes/`, etc. | `https://uat-snowstorm.ihtsdotools.org/…` |
 
 The `IMS_SESSION_COOKIE` value is injected as a `Cookie` header on every proxied request, authenticating you to the backend.
 
@@ -98,8 +98,8 @@ grunt build        # production bundle → dist/
 
 ## Pointing at a different backend
 
-To use a backend other than `dev-snowstorm.ihtsdotools.org`, change `DEV_HOST` at the top of the proxy middleware in `Gruntfile.js`:
+To use a backend other than `uat-snowstorm.ihtsdotools.org`, change `DEV_HOST` at the top of the proxy middleware in `Gruntfile.js`:
 
 ```js
-var DEV_HOST = 'dev-snowstorm.ihtsdotools.org';  // change this
+var DEV_HOST = 'uat-snowstorm.ihtsdotools.org';  // change this
 ```

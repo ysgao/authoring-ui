@@ -80,7 +80,7 @@ module.exports = function (grunt) {
           middleware: function (connect) {
             var serveStatic = require('serve-static');
             var https = require('https');
-            var DEV_HOST = 'dev-snowstorm.ihtsdotools.org';
+            var DEV_HOST = 'uat-snowstorm.ihtsdotools.org';
             var IMS_HOST = 'dev-ims.ihtsdotools.org';
             // IMS_SESSION_COOKIE: set to "dev-ims-ihtsdo=<jwt>" (copy from browser via
             // DevTools Network → Copy as cURL, extract the dev-ims-ihtsdo cookie value).

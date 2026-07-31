@@ -119,6 +119,18 @@ angular.module('singleConceptAuthoringApp')
       },
 
       /**
+       * Reports the task branch currently open in this editing session (or null when the
+       * user navigates away). The extension host uses this to answer the headless cli/'s
+       * "what task is open" question, so the CLI can act against it without being told
+       * explicitly. No-op when running in standalone browser mode.
+       */
+      sendTaskContext: function (task) {
+        if (vscodeApi) {
+          vscodeApi.postMessage({ command: 'TASK_CONTEXT_CHANGED', payload: task });
+        }
+      },
+
+      /**
        * Registers a callback invoked when the extension host sends DISPLAY_CONFIG_INIT.
        * If config was already received, callback fires immediately.
        */

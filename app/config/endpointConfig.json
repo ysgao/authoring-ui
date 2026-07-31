@@ -1,8 +1,8 @@
 {
   "endpoints": {
-    "authoringEndpoint": "https://dev-snowstorm.ihtsdotools.org/snowowl/ihtsdo-authoring/",
-    "snowOwlEndpoint": "https://dev-snowstorm.ihtsdotools.org/snomed-ct/",
-    "imsEndpoint": "https://dev-snowstorm.ihtsdotools.org/#/",
+    "authoringEndpoint": "https://uat-snowstorm.ihtsdotools.org/snowowl/ihtsdo-authoring/",
+    "snowOwlEndpoint": "https://uat-snowstorm.ihtsdotools.org/snomed-ct/",
+    "imsEndpoint": "https://uat-snowstorm.ihtsdotools.org/#/",
     "collectorEndpoint": "",
     "axiomDisabled":true
   }

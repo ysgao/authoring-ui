@@ -348,7 +348,7 @@ angular
                   enabled: true,
                   triggerText: 'Raise an Issue',
                   triggerPosition: 'CUSTOM',
-                  baseUrl: standardBaseUrl || 'https://dev-snowstorm.ihtsdotools.org'
+                  baseUrl: standardBaseUrl || 'https://uat-snowstorm.ihtsdotools.org'
                 };
               }
 

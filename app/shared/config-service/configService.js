@@ -12,10 +12,10 @@ angular.module('singleConceptAuthoringApp')
     var _vsConfig = (typeof window !== 'undefined' && window.__ONTOGRAPH_CONFIG__) || {};
     var VSCODE_FALLBACK_CONFIG = {
       endpoints: {
-        terminologyServerEndpoint: _vsConfig.terminologyServerEndpoint || 'https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/',
-        terminologyServerExternalEndpoint: _vsConfig.terminologyServerExternalEndpoint || _vsConfig.terminologyServerEndpoint || 'https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/',
-        imsEndpoint: _vsConfig.imsEndpoint || 'https://dev-snowstorm.ihtsdotools.org/',
-        authoringServicesEndpoint: _vsConfig.authoringServicesEndpoint || 'https://dev-snowstorm.ihtsdotools.org/authoring-services/',
+        terminologyServerEndpoint: _vsConfig.terminologyServerEndpoint || 'https://uat-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/',
+        terminologyServerExternalEndpoint: _vsConfig.terminologyServerExternalEndpoint || _vsConfig.terminologyServerEndpoint || 'https://uat-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/',
+        imsEndpoint: _vsConfig.imsEndpoint || 'https://uat-snowstorm.ihtsdotools.org/',
+        authoringServicesEndpoint: _vsConfig.authoringServicesEndpoint || 'https://uat-snowstorm.ihtsdotools.org/authoring-services/',
         aagEndpoint: _vsConfig.aagEndpoint || '',
         releaseNotesEndpoint: _vsConfig.releaseNotesEndpoint || '',
         rvfEndpoint: _vsConfig.rvfEndpoint || '',
