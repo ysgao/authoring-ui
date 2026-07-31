@@ -69,6 +69,17 @@ angular.module('singleConceptAuthoringApp')
             try { displayConfigInitCallbacks[i](msg.payload); } catch (e) { /* ignore */ }
           }
         }, 0);
+        return;
+      }
+
+      // Sent by the extension host after a headless authoring-cli write saves a concept with
+      // validate=true — lets a human watching the same task in this webview see the same
+      // save-time validation messages (case significance conflicts, duplicate descriptions,
+      // redundant relationships, etc.) the interactive editor would show after a manual save.
+      if (msg.command === 'VALIDATION_RESULTS' && msg.payload) {
+        $timeout(function () {
+          $rootScope.$broadcast('externalValidationResults', msg.payload);
+        }, 0);
       }
     });
 

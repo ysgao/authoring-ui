@@ -522,6 +522,42 @@ angular.module('singleConceptAuthoringApp').directive('conceptEdit', function ($
         scope.descriptionIndexToOptionalLanguagesMap = {};
         scope.contextBasedEditingEnabled = false;
 
+        // Injected by the extension host after a headless authoring-cli write saves this same
+        // concept with validate=true (see vsCodeService.js's VALIDATION_RESULTS handler).
+        // Mirrors saveHelper()'s own severity-bucketing below exactly, so a save made outside
+        // this webview renders through the same validation.errors/warnings[componentId]
+        // bindings the template already uses — no new UI, just an additional writer of
+        // scope.validation.
+        scope.$on('externalValidationResults', function (event, payload) {
+          if (!scope.concept || !payload || scope.concept.conceptId !== payload.conceptId) {
+            return;
+          }
+          var results = {
+            hasWarnings: false,
+            hasErrors: false,
+            warnings: {},
+            errors: {}
+          };
+          angular.forEach(payload.validationResults, function (validationResult) {
+            if (validationResult.severity === 'WARNING') {
+              if (!scope.merge) {
+                results.hasWarnings = true;
+                if (!results.warnings[validationResult.componentId]) {
+                  results.warnings[validationResult.componentId] = [];
+                }
+                results.warnings[validationResult.componentId].push(replaceConceptIdByLink(validationResult.message));
+              }
+            } else if (validationResult.severity === 'ERROR') {
+              results.hasErrors = true;
+              if (!results.errors[validationResult.componentId]) {
+                results.errors[validationResult.componentId] = [];
+              }
+              results.errors[validationResult.componentId].push(replaceConceptIdByLink(validationResult.message));
+            }
+          });
+          scope.validation = results;
+        });
+
         // utility function pass-thrus
         scope.isSctid = terminologyServerService.isSctid;
         scope.relationshipHasTargetSlot = templateService.relationshipHasTargetSlot;
