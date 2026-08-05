@@ -1,6 +1,9 @@
 'use strict'
 
-describe ('task creation modal', function() {
+// This is the unmodified generator-angular example spec (PasswordController/$scope.grade
+// don't exist anywhere in this app) — never adapted into a real test of the task module.
+// Marked pending rather than deleted or faked, since it's a placeholder, not a typo.
+xdescribe ('task creation modal', function() {
   beforeEach(angular.mock.module('singleConceptAuthoringApp'));
 
   var $controller;

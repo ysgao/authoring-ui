@@ -6,6 +6,11 @@
  * build process will exclude all `.spec.js` files from the build
  * automatically.
  */
+// This entire file is a never-implemented test outline from the original scaffold: every
+// describe() below is an empty block naming an intended test, never filled in. Jasmine treats
+// a describe() with zero it()/describe() children as an error ("describe with no children"),
+// which aborts the whole suite run — so each gets a single `it()` with no body, Jasmine's own
+// convention for "this spec is planned but not yet written" (renders as Pending, not a failure).
 describe( 'edit section', function() {
 
   ////////////////////////////////////////////////////////
@@ -13,31 +18,31 @@ describe( 'edit section', function() {
   ////////////////////////////////////////////////////////
 
   describe ('Edit Component: side bar elements loaded', function() {
-
+    it('side bar elements loaded');
   });
 
   // taxonomy loaded: tab and root concept exist
   describe ('Taxonomy widget loaded', function() {
-
+    it('tab and root concept exist');
   });
 
   // search loaded: tab and search field exist
   describe ('Search widget loaded', function() {
-
+    it('tab and search field exist');
   });
 
   // saved list loaded:  tab exists
   describe ('Saved List loaded', function() {
-
+    it('tab exists');
   });
 
   // task detail loaded:  tab and classify button exist
   describe ('Task Detail loaded', function() {
-
+    it('tab and classify button exist');
   });
   // feedback loaded:  tab exists
   describe ('Feedback loaded', function() {
-
+    it('tab exists');
   });
 
   ////////////////////////////////////////////////////////
@@ -45,7 +50,12 @@ describe( 'edit section', function() {
   ////////////////////////////////////////////////////////
 
   describe ('Edit Component: Setting views', function() {
-
+    it('initial view parameters correct (default)');
+    it('set view: default');
+    it('set view: hide model');
+    it('set view: hide sidebar');
+    it('set view: classification');
+    it('set view: validation');
   });
   // initial view parameters correct (default)
 

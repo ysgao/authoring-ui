@@ -7,7 +7,7 @@
  * automatically.
  */
 describe( 'review section', function() {
-  beforeEach( module( 'singleConceptAuthoringApp.review' ) );
+  beforeEach( module( 'singleConceptAuthoringApp' ) );
 
   it( 'should have a dummy test', inject( function() {
     expect( true ).toBeTruthy();

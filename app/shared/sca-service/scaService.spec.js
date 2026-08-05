@@ -7,7 +7,7 @@
  * automatically.
  */
 describe( 'about section', function() {
-  beforeEach( module( 'scaService' ) );
+  beforeEach( module( 'singleConceptAuthoringApp' ) );
 
   it( 'should have a dummy test', inject( function() {
     expect( true ).toBeTruthy();

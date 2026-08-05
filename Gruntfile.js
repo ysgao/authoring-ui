@@ -21,7 +21,7 @@ module.exports = function (grunt) {
 
   // Configurable paths for the application
   var appConfig = {
-    app: require('./bower.json').appPath || 'app',
+    app: 'app',
     dist: 'dist'
   };
 
@@ -455,6 +455,14 @@ module.exports = function (grunt) {
       dist: [
         'sass'
       ]
+    },
+
+    // Karma/Jasmine unit tests (test/karma.conf.js)
+    karma: {
+      unit: {
+        configFile: 'test/karma.conf.js',
+        singleRun: true
+      }
     }
   });
 
@@ -493,6 +501,7 @@ module.exports = function (grunt) {
   ]);
   
   grunt.registerTask('test', [
+    'karma'
   ]);
 
   grunt.registerTask('default', [

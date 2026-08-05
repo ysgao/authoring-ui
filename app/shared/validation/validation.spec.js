@@ -7,7 +7,7 @@
  * automatically.
  */
 describe( 'classification section', function() {
-  beforeEach( module( 'singleConceptAuthoringApp.classification' ) );
+  beforeEach( module( 'singleConceptAuthoringApp' ) );
 
   it( 'should have a dummy test', inject( function() {
     expect( true ).toBeTruthy();
