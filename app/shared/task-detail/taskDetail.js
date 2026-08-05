@@ -1,8 +1,8 @@
 'use strict';
 angular.module('singleConceptAuthoringApp.taskDetail', [])
 
-  .controller('taskDetailCtrl', ['$rootScope', '$scope', '$routeParams', '$route', '$location', '$timeout', '$modal', 'metadataService', 'accountService', 'scaService', 'terminologyServerService', 'aagService', 'promotionService', 'crsService', 'notificationService', '$q', 'reviewService', 'rnmService', 'permissionService', 'modalService', 'componentAuthoringUtil',
-    function taskDetailCtrl($rootScope, $scope, $routeParams, $route, $location, $timeout, $modal, metadataService, accountService, scaService, terminologyServerService, aagService, promotionService, crsService, notificationService, $q, reviewService, rnmService, permissionService, modalService, componentAuthoringUtil) {
+  .controller('taskDetailCtrl', ['$rootScope', '$scope', '$routeParams', '$route', '$location', '$timeout', '$modal', 'metadataService', 'accountService', 'scaService', 'terminologyServerService', 'aagService', 'promotionService', 'crsService', 'notificationService', '$q', 'reviewService', 'rnmService', 'permissionService', 'modalService', 'componentAuthoringUtil', 'vsCodeService',
+    function taskDetailCtrl($rootScope, $scope, $routeParams, $route, $location, $timeout, $modal, metadataService, accountService, scaService, terminologyServerService, aagService, promotionService, crsService, notificationService, $q, reviewService, rnmService, permissionService, modalService, componentAuthoringUtil, vsCodeService) {
 
       var externalAuthoringGroup = null;
       $scope.task = null;
@@ -528,6 +528,23 @@ angular.module('singleConceptAuthoringApp.taskDetail', [])
           $rootScope.$broadcast('reloadTask');
         });
       }
+
+      // Unlike classification, validation isn't automatically re-checked while running in VS Code
+      // mode (see edit.js's pollClassificationStatusInVsCode()) — deliberately so, since RVF
+      // validation routinely takes ~10 minutes or more, and polling even on a backed-off schedule
+      // for that long would be wasted effort most of the time. Instead, expose a manual check the
+      // user can click when they think it's likely done — reuses the exact same 'reloadTask'
+      // broadcast doValidate() already relies on, which both re-fetches the task's
+      // latestValidationStatus (edit.js's loadTask()) and the full validation report
+      // (edit.js's getLatestValidation()).
+      $scope.isVsCodeWebview = function () {
+        return !!vsCodeService.getVsCodeApi();
+      };
+
+      $scope.checkValidationStatus = function () {
+        notificationService.sendMessage('Checking validation status...', 3000, null);
+        $rootScope.$broadcast('reloadTask', {project: $routeParams.projectKey, task: $routeParams.taskKey, reloadValidationReport: true});
+      };
 
       // list of tracked unsaved concepts
       $scope.reviewChecks = null;

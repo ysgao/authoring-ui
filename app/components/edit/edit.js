@@ -1711,7 +1711,9 @@ angular.module('singleConceptAuthoringApp.edit', [
               refreshValidationIndicator($scope.task.latestValidationStatus);
             }
             if ($rootScope.classificationRunning) {
-              pollClassificationStatusInVsCode($routeParams.projectKey, $routeParams.taskKey);
+              // Elapsed time is unknown here (job could already be done) — see
+              // CLASSIFICATION_POLL_SCHEDULE_MIDFLIGHT's comment above.
+              pollClassificationStatusInVsCode($routeParams.projectKey, $routeParams.taskKey, CLASSIFICATION_POLL_SCHEDULE_MIDFLIGHT);
             }
             deferred.resolve(task);
           });
@@ -2020,17 +2022,45 @@ angular.module('singleConceptAuthoringApp.edit', [
     // the job finishes server-side but $rootScope.classificationRunning never clears, and the
     // spinner looks permanently hung. Poll the task's status directly instead, only in VS Code
     // mode (outside it, STOMP already handles this in real time).
-    var CLASSIFICATION_POLL_INTERVAL_MS = 5000;
-    var CLASSIFICATION_POLL_MAX_ATTEMPTS = 240; // ~20 minutes
+    // Schedule of delays (ms) before each successive status check once polling starts, tightening
+    // as completion becomes more likely: classification normally finishes in ~2 minutes, so the
+    // first 90s has no realistic chance of finding it done — skip straight there. Then check every
+    // 10s for the next 30s (completion is getting likely), then settle into a steady 5s cadence for
+    // another minute. Total budget is exactly 3 minutes (90 + 3*10 + 12*5): if it's still not done
+    // by then, that's well outside normal timing, so stop polling and tell the user rather than
+    // continuing indefinitely or silently giving up.
+    var CLASSIFICATION_POLL_SCHEDULE = buildClassificationPollSchedule();
+    // A task reopened mid-flight (loadTask()) has unknown elapsed time — unlike a job we just
+    // started ourselves, it could already be finished, so skip the 90s upfront skip (that's only
+    // safe when we know the job is brand new) and start straight into the tightening cadence.
+    var CLASSIFICATION_POLL_SCHEDULE_MIDFLIGHT = CLASSIFICATION_POLL_SCHEDULE.slice(1);
 
-    function pollClassificationStatusInVsCode(projectKey, taskKey, attemptsRemaining) {
+    function buildClassificationPollSchedule() {
+      var schedule = [90000];
+      var i;
+      for (i = 0; i < 3; i++) {
+        schedule.push(10000);
+      }
+      for (i = 0; i < 12; i++) {
+        schedule.push(5000);
+      }
+      return schedule;
+    }
+
+    function pollClassificationStatusInVsCode(projectKey, taskKey, schedule, scheduleIndex) {
       if (!vsCodeService.getVsCodeApi()) {
         return;
       }
-      if (typeof attemptsRemaining === 'undefined') {
-        attemptsRemaining = CLASSIFICATION_POLL_MAX_ATTEMPTS;
+      if (typeof schedule === 'undefined') {
+        schedule = CLASSIFICATION_POLL_SCHEDULE;
       }
-      if (attemptsRemaining <= 0) {
+      if (typeof scheduleIndex === 'undefined') {
+        scheduleIndex = 0;
+      }
+      if (scheduleIndex >= schedule.length) {
+        notificationService.sendError(
+          'Classification for task ' + taskKey + ' is taking longer than expected (over 3 minutes) — it may need to be restarted.'
+        );
         return;
       }
       $timeout(function () {
@@ -2045,13 +2075,13 @@ angular.module('singleConceptAuthoringApp.edit', [
           var status = task && task.latestClassificationJson && task.latestClassificationJson.status;
           var stillRunning = status === 'RUNNING' || status === 'SCHEDULED' || status === 'BUILDING' || status === 'QUEUED';
           if (stillRunning) {
-            pollClassificationStatusInVsCode(projectKey, taskKey, attemptsRemaining - 1);
+            pollClassificationStatusInVsCode(projectKey, taskKey, schedule, scheduleIndex + 1);
           } else {
             notificationService.sendMessage('Classification ' + (status ? status.toLowerCase() : 'completed') + ' for task ' + taskKey, 10000);
             $rootScope.$broadcast('reloadTask', {project: projectKey, task: taskKey});
           }
         });
-      }, CLASSIFICATION_POLL_INTERVAL_MS);
+      }, schedule[scheduleIndex]);
     }
 
     function doClassify() {
@@ -2070,6 +2100,8 @@ angular.module('singleConceptAuthoringApp.edit', [
         }
 
         $rootScope.$broadcast('reloadTask');
+        // Job is brand new here, so use the full schedule (90s initial skip) — see
+        // CLASSIFICATION_POLL_SCHEDULE's comment above.
         pollClassificationStatusInVsCode($routeParams.projectKey, $routeParams.taskKey);
       }, function () {
         // do nothing on error
